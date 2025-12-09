@@ -206,9 +206,20 @@ Epoch 0 contains periods 0-9, Epoch 1 contains period 10-19, etc.
 
 Stakers can add liquidity to the stability pool by staking ParityUSD and earn interest from the loans. When the do so they receive a receipt which is post-dated to the start of the next epoch. Stakers can also remove liquidity from the stability pool by withdrawing their ParityUSD. When they do so they must return the receipt.
 
-Staking operates on epoch boundaries. Staked funds accrue interest only for complete epochs that start after their creation. When users stake ParityUSD, they receive a receipt for the next epoch. For example, if a staker stakes ParityUSD during period 15 (epoch 1), they receive a receipt for period 20 (epoch 2) and will start earning interest from epoch 2 onwards. 
+Staking operates on epoch boundaries. Staked funds accrue interest only for complete epochs that start after their creation. When users stake ParityUSD, they receive a receipt for the next epoch. For example, if a staker stakes ParityUSD during period 15 (epoch 1), they receive a receipt for epoch 2 and will start earning interest from epoch 2 onwards. 
 
-The `AddLiquidity` contract calculates the next epoch period as `periodNextEpoch = int(currentPeriod) + 10` to ensure stakers receive receipts for the proper epoch. Withdrawals can only occur within the same epoch as the receipt, enforced by the requirement `periodReceipt / 10 == currentPeriod / 10`.
+The `AddLiquidity` contract calculates the next epoch as value for the `epochReceipt` state. This is because withdrawals can only occur within the same epoch as the receipt, withdrawal is locked until the start of the next epoch. The logic is enforced by the following code:
+
+```solidity
+  // Calculate next epoch for receipt because withdrawals are only allowed from the next epoch
+  // Divide by 10 because there's 10 periods per epoch
+  int currentEpoch = int(periodPoolBytes) / 10;
+  int nextEpoch = currentEpoch + 1;
+```
+
+The `WithdrawFromPool` contract which handles the unstaking only allows for full withdrawals of the amount staked on user staking receipts. The Withdrawal function still compensates stakers with BCH interest earnings already earned in the current epoch.
+
+If any liquidations happened during the current epoch, then pro-rata reduction of stake and payout of BCH liquidation earnings also take place at withdrawal time. Practically, this means that the amount which can be unstaked (withdrawn) from the pool is dependent on the share of pool funds spent in liquidations. A staking receipt of 1000 PUSD in the latest epoch can only withdraw 750 PUSD if the stability pool spent 25% of the staked funds in liquidations this epoch. The withdrawer also gets the corresponding BCH liquidation earnings paid out at withdrawal time.
 
 ### The Interest Collection Mechanism
 

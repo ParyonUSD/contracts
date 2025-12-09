@@ -8,20 +8,20 @@ pragma cashscript ^0.12.0;
 */
 
 /*  --- State Staking Receipt Immutable NFT ---
-    bytes4 periodReceipt
+    bytes4 epochReceipt
     bytes amountStakedReceipt (tokens)
 */
 
 // minimumToStake = 100.00 ParityUSD
 
-// Note: When staking, the periodReceipt is set to the next epoch (currentPeriod + 10)
+// Note: When staking, the epochReceipt is set to the next epoch (current epoch pool + 1)
 // Because of this, user cannot withdraw in the same epoch as they staked
 
 contract AddLiquidity(
   bytes32 parityTokenId
   ) {
       // function addToPool
-      // Allows user to add ParityUSD to the stabilityPool and receives a receiptNFT with deposited amount & next period recorded.
+      // Allows users to add ParityUSD to the stabilityPool and receive a staking receipt with staked amount & next epoch recorded.
       //
       // Inputs: 00-stabilityPool, 01-stabilityPoolSidecar, 02-addToPool, ??-feeBch, ??-userTokens
       // Outputs: 00-stabilityPool, 01-stabilityPoolSidecar, 02-addToPool, 03-receipt, ??-changeTokens, ??-changeBch
@@ -55,12 +55,14 @@ contract AddLiquidity(
       // Parse stabilitypool state
       bytes4 periodPoolBytes = tx.inputs[0].nftCommitment.split(4)[0];
 
-      // Only allow withdrawals in the next staking epoch (10 periods per epoch)
-      int periodNextEpoch = int(periodPoolBytes) + 10;
+      // Calculate next epoch for receipt because withdrawals are only allowed from the next epoch
+      // Divide by 10 because there's 10 periods per epoch
+      int currentEpoch = int(periodPoolBytes) / 10;
+      int nextEpoch = currentEpoch + 1;
 
       // Create Receipt output at outputIndex 3
       require(tx.outputs[3].tokenCategory == stabilityPoolTokenId, "Invalid receipt, should have correct tokenId");
-      bytes newReceipt = bytes4(periodNextEpoch) + bytes(addedTokenAmount);
+      bytes newReceipt = bytes4(nextEpoch) + bytes(addedTokenAmount);
       require(tx.outputs[3].nftCommitment == newReceipt, "Invalid receipt, should have correct nftCommitment");
       require(tx.outputs[3].value == 1000);
 

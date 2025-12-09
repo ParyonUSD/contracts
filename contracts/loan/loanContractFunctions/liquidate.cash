@@ -69,5 +69,6 @@ contract liquidateLoan(
       require(tx.outputs[1].nftCommitment == tx.inputs[3].nftCommitment);
       require(tx.outputs[1].tokenCategory == tx.inputs[3].tokenCategory);
       require(tx.outputs[1].value == 1000);
+      require(tx.outputs[1].tokenAmount == 0);
     }
 }

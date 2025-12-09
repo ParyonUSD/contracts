@@ -102,10 +102,13 @@ contract NewPeriodPool(
         // Calculate total payout amount minus dust as 'totalPayoutValue' for payout contract state
         int payoutAmountMinusDust = payoutAmount - 1000;
 
-        // Construct state for payout contract
+        // Calculate epochPayout (uses the currentPeriodPool before incrementing to newPeriod)
+        int epochPayout = currentPeriodPool / 10;
+
         // Encode variable length encoded remainingStakedEpochBytes as fixed bytes6 size
         bytes6 remainingStakedEpochBytes6 = bytes6(int(remainingStakedEpochBytes));
-        bytes payoutContractState = currentPeriodPoolBytes + totalStakedEpochBytes + remainingStakedEpochBytes6 + bytes(payoutAmountMinusDust);
+        // Construct state for payout contract
+        bytes payoutContractState = bytes4(epochPayout) + totalStakedEpochBytes + remainingStakedEpochBytes6 + bytes(payoutAmountMinusDust);
         require(tx.outputs[5].nftCommitment == payoutContractState);
       } else {
         // Otherwise StabilityPool should be recreated with the new calculated balance

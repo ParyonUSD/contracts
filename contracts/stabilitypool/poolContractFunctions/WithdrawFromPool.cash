@@ -2,36 +2,42 @@ pragma cashscript ^0.12.0;
 
 // WithdrawFromPool pool contract function
 // Allows user to withdraw ParityUSD from the stabilityPool by returning their staking receipt NFT
-// To withdraw, the staking receipt should have a periodReceipt matching the current epoch
-// The periodReceipt and amountStakedReceipt are updated by the Payout contract and accounts for any funds used in liquidations
-// Users can choose to do a partial withdrawal, receiving a new receipt for the remaining stake
+// To withdraw, the staking receipt should have a receipt with an epochReceipt matching the current pool epoch
+// The epochReceipt and amountStakedReceipt are updated by the Payout contract and accounts for any funds used in liquidations
+// Any BCH earnings of the StabilityPool in this epoch are paid out pro-rata to the withdrawer based on their stake share
+// if liquidations were processed in this epoch, the withdrawer also gets their stake reduced proportionally to the amount of funds spent in liquidations
+// The full share of the remaining staked funds for the receipt must be withdrawn, partial withdrawals are not supported
 
 /*  --- State Immutable NFT ---
     byte identifier == 0x04
 */
 
-/*  --- State Receipts Immutable NFT ---
-    bytes4 periodReceipt
+/*  --- State Staking Receipt Immutable NFT ---
+    bytes4 epochReceipt
     bytes amountStakedReceipt (tokens)
 */
 
-// for partial withdrawals:
-// minimumToWithdraw = 100.00 ParityUSD
-// minimumToKeepStaked = 100.00 ParityUSD
+// Note: In this unlikely event of an empty stability pool when all pool funds spent in liquidations
+// then early withdrawal of BCH earnings is not possible, only through the Payout contract at the end of the epoch
 
-// Note: In practice the 'periodReceipt' state is only used to derive the corresponding epoch (periodReceipt / 10)
+// Note on arithmetic and rounding:
+// - Division is integer division and truncates toward 0 (effectively floor for non-negative values)
+// - When we compute ratio-based amounts, we multiply first and divide last to retain maximum precision
+// - There are two ratio based calculations: reducedWithdrawalAmount and proRataPoolEarnings
+// - For reducedWithdrawalAmount token amount values are rounded down to the nearest token unit, so by at most 0.01 ParityUSD
+// - For BCH earnings (proRataPoolEarnings) the result is rounded down by at most 1 sat
+// - Overall, rounding is conservative: the pool never overpays out tokens or BCH earnings
+//   Rounding only affects how the last cent/satoshi of the fixed pool is split between users and how much remains as dust
 
 contract WithdrawFromPool(
   ) {
     // function withdraw
-    // Allows ParityUSD depositer to withdraw their tokens from the StabilityPool.
+    // Allows ParityUSD stakers to withdraw their tokens from the StabilityPool, pro-rata BCH earnings and stake reduction are applied at withdrawal.
     //
     // Inputs: 00-StabilityPool, 01-stabilityPoolSidecar, 02-WithdrawFromPool, 03-userReceipt, 04-feeBch
-    // Outputs: 00-StabilityPool, 01-stabilityPoolSidecar, 02-WithdrawFromPool, ?03-newReceipt, 03/04-withdrawnTokens, ?04/05-changeBch
+    // Outputs: 00-StabilityPool, 01-stabilityPoolSidecar, 02-WithdrawFromPool, 03-withdrawnTokens, ?04-stakeEarningsBch, ?04/05-changeBch
 
-    function withdraw(
-      int amountWithdrawal
-    ){
+    function withdraw(){
       // Require function to be at inputIndex 2
       require(this.activeInputIndex== 2);
 
@@ -41,45 +47,50 @@ contract WithdrawFromPool(
 
       // Parse stabilitypool state
       bytes4 periodPoolBytes, bytes remainingState = tx.inputs[0].nftCommitment.split(4);
+      bytes6 totalStakedEpochBytes, bytes remainingStakedEpochBytes = remainingState.split(6);
 
       // Authenticate staking receipt
       require(tx.inputs[3].tokenCategory == stabilityPoolTokenId, "Invalid receipt, should have correct tokenId");
 
       // Parse state staking receipt
-      bytes4 periodReceiptBytes, bytes amountStakedReceiptBytes = tx.inputs[3].nftCommitment.split(4);
+      bytes4 epochReceiptBytes, bytes amountStakedReceiptBytes = tx.inputs[3].nftCommitment.split(4);
+      int epochReceipt = int(epochReceiptBytes);
 
-      // Check period receipt, should be in the same staking epoch (10 periods) as currentPeriod
-      int currentPeriod = int(periodPoolBytes);
-      int periodReceipt = int(periodReceiptBytes);
-      require(periodReceipt / 10 == currentPeriod / 10);
+      // Check epoch receipt, should be in the same staking epoch as the stability pool
+      // Convert currentPeriod pool state to epoch (10 periods per epoch)
+      int currentEpoch = int(periodPoolBytes) / 10;
+      require(epochReceipt == currentEpoch);
 
-      // Check amountWithdrawal is in valid range
+      // Convert bytes to int for follow up calculations
+      int totalStakedEpoch = int(totalStakedEpochBytes);
+      int remainingStakedEpoch = int(remainingStakedEpochBytes);
       int amountStakedReceipt = int(amountStakedReceiptBytes);
-      bool isFullWithdrawal = amountWithdrawal == amountStakedReceipt;
-      // Check range amountWithdrawal: minimum treshold OR full withdrawal (if less than minimum)
-      require(amountWithdrawal >= 100_00 || isFullWithdrawal);
-      // Maximum withdrawal is the amountStakedReceipt
-      require(amountWithdrawal <= amountStakedReceipt);
       
       // The StabilityPool itself enforces the same lockingBytecode & tokenCategory
       // Pool functions need to enforce the nftCommitment & value (and tokenAmount in sidecar)
-      
-      // Replicate StabilityPool value
-      require(tx.outputs[0].value == tx.inputs[0].value, "Recreate contract at output0 - should have same BCH Balance");
-      
-      // Parse remaining state of StabilityPool
-      bytes6 totalStakedEpochBytes, bytes remainingStakedEpochBytes = remainingState.split(6);
+      // To update the state of the StabilityPool we need to calculate 2 new state variables
 
-      // Calculate new state for StabilityPool
-      int newTotalStakedEpoch = int(totalStakedEpochBytes) - amountWithdrawal;
-      int newRemainingStakedEpoch = int(remainingStakedEpochBytes) - amountWithdrawal;
+      // Calculate newTotalStakedEpoch state
+      int newTotalStakedEpoch = totalStakedEpoch - amountStakedReceipt;
+
+      // Calculate reducedWithdrawalAmount
+      // This is the actual withdrawal amount for the user receipt after accounting for stake reductions due to liquidations
+      int reducedWithdrawalAmount = amountStakedReceipt * remainingStakedEpoch / totalStakedEpoch;
+
+      // Calculate newRemainingStakedEpoch state
+      // Remaining staked is reduced by the actual amount withdrawn
+      // This is because liquidations are already accounted for in the remainingStakedEpoch state
+      int newRemainingStakedEpoch = remainingStakedEpoch - reducedWithdrawalAmount;
       
       // Change state StabilityPool
+      // periodPool remains the same, totalStakedEpoch and remainingStakedEpoch are updated
       bytes newStateStabilityPool = periodPoolBytes + bytes6(newTotalStakedEpoch) + bytes(newRemainingStakedEpoch);
       require(tx.outputs[0].nftCommitment == newStateStabilityPool);
-      
+
+      // StabilityPool value restricted in calculation of proRataPoolEarnings (see below)
+
       // TokenSidecar recreated with reduced tokenAmount
-      int newStabilityPoolSidecarTokenAmount = tx.inputs[1].tokenAmount - amountWithdrawal;
+      int newStabilityPoolSidecarTokenAmount = tx.inputs[1].tokenAmount - reducedWithdrawalAmount;
       require(tx.outputs[1].tokenAmount == newStabilityPoolSidecarTokenAmount);
 
       // Recreate functionContract exactly
@@ -88,34 +99,50 @@ contract WithdrawFromPool(
       require(tx.outputs[2].tokenCategory == tx.inputs[2].tokenCategory);
       require(tx.outputs[2].value == 1000);
 
-      // Assign index for the ParityUSD staking withdrawal output
-      int withdrawalOutputIndex = 3;
+      // Output for Withdrawal tokens, at output index 3
+      // Nft commitment check of 0x not strictly necessary, but added for completeness
+      require(tx.outputs[3].tokenCategory == tx.inputs[1].tokenCategory);
+      require(tx.outputs[3].tokenAmount == reducedWithdrawalAmount);
+      require(tx.outputs[3].value == 1000);
+      require(tx.outputs[3].nftCommitment == 0x);
 
-      // Handle partial withdrawals
-      if(!isFullWithdrawal){
-        // If not a full withdrawal, issue new receipt
-        withdrawalOutputIndex = 4;
+      int currentPoolBchBalance = tx.inputs[0].value;
+      // Subtract dust minimum of 1000 sats to keep minimum balance in the pool
+      int totalPoolEarnings = currentPoolBchBalance - 1000;
+      // Calculate user pro-rata pool earnings on reduced withdrawal amount (after stake reduction)
+      // proRataPoolEarnings = totalPoolEarnings * userShare
+      // with userShare = reducedWithdrawalAmount / remainingStakedEpoch
+      // (equal to amountStakedReceipt / totalStakedEpoch in ideal real-number arithmetic)
+      int proRataPoolEarnings = totalPoolEarnings * reducedWithdrawalAmount / remainingStakedEpoch;
 
-        // Require minimum for newAmountStaked
-        int newAmountStakedReceipt = amountStakedReceipt - amountWithdrawal;
-        require(newAmountStakedReceipt >= 100_00);
-        
-        // Issue receipt as fourth output
-        require(tx.outputs[3].tokenCategory == stabilityPoolTokenId, "Invalid receipt, should have correct tokenId");
-        bytes newReceipt = periodPoolBytes + bytes(newAmountStakedReceipt);
-        require(tx.outputs[3].nftCommitment == newReceipt, "Invalid receipt, should have correct nftCommitment");
-        require(tx.outputs[3].value == 1000);
+      // Assign index for the bch change output, default at index 4
+      // Output index is updated to 5 if there is a stakeEarningsBch output created
+      int changeBchOutputIndex = 4;
+
+      // Check if there are pool earnings to be distributed
+      // Depending on if there are, we need to restrict the new BCH holdings of the stabilityPool accordingly
+      if(proRataPoolEarnings > 1000){
+        // If the proRataPoolEarnings are > 1000, create a dedicated output and adjust output indexes
+        changeBchOutputIndex = 5;
+
+        // Require earnings output at dynamic output index
+        require(tx.outputs[4].value == proRataPoolEarnings);
+        require(tx.outputs[4].tokenCategory == 0x);
+
+        // Calculate new stabilityPool BCH balance after pro rata pool earnings payout
+        int newStabilityPoolBchBalance = currentPoolBchBalance - proRataPoolEarnings;
+        require(tx.outputs[0].value == newStabilityPoolBchBalance, "Recreate contract at output0 - should have updated BCH Balance after pro rata pool earnings payout");
+      } else {
+        // No pool earnings paid out, stabilityPool BCH balance should remain the same
+        require(tx.outputs[0].value == currentPoolBchBalance, "Recreate contract at output0 - should have same BCH Balance");
       }
-      
-      // Output for Withrawal tokens, at index 3 or 4 depending on newReceipt or not
-      require(tx.outputs[withdrawalOutputIndex].tokenCategory == tx.inputs[1].tokenCategory);
 
-      // Optional output for BCH change
-      if (tx.outputs.length > withdrawalOutputIndex + 1) {
-        require(tx.outputs[withdrawalOutputIndex + 1].tokenCategory == 0x, "Invalid BCH change output - should not hold any tokens");
+      // Optional output for BCH change at dynamic output index
+      if (tx.outputs.length > changeBchOutputIndex) {
+        require(tx.outputs[changeBchOutputIndex].tokenCategory == 0x, "Invalid BCH change output - should not hold any tokens");
       }
 
       // Don't allow more outputs to prevent minting extra NFTs.
-      require(tx.outputs.length <= withdrawalOutputIndex + 2, "Invalid number of outputs");
+      require(tx.outputs.length <= changeBchOutputIndex + 1, "Invalid number of outputs");
     }
 }
