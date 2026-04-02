@@ -7,14 +7,14 @@ pragma cashscript ^0.12.0;
 */
 
 contract Redeemer(
-  bytes32 parityTokenId,
+  bytes32 paryonTokenId,
   bytes redemptionLockingScript,
   bytes tokenSidecarLockingScript
   ) {
       // function createRedemption
-      // Creates a redemption with two tokensidecars to keep state and hold parity tokens.
+      // Creates a redemption with two tokensidecars to keep state and hold paryon tokens.
       //
-      // Inputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 0?-Parity-tokens, 0?-feeBch
+      // Inputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 0?-Paryon-tokens, 0?-feeBch
       // Outputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 05-redemption, 06-redemptionStateSidecar, 07-redemptionTokenSidecar, ??-changeBch
 
     function createRedemption(
@@ -26,15 +26,15 @@ contract Redeemer(
       require(this.activeInputIndex == 4);
 
       // Authenticate PriceContract at inputIndex 0
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
       // Authenticate Loan at inputIndex 1
-      require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[1].nftCommitment.split(1)[0] == 0x01);
 
       // Authenticate Redeem function NFT at inputIndex 3
-      require(tx.inputs[3].tokenCategory == parityTokenId);
+      require(tx.inputs[3].tokenCategory == paryonTokenId);
       require(tx.inputs[3].nftCommitment.split(1)[0] == 0x04);
 
       // Validate redeemerPkh input
@@ -82,14 +82,14 @@ contract Redeemer(
       // Create redemption tokensidecar at output index 7
       require(tx.outputs[7].value == 1000);
       require(tx.outputs[7].lockingBytecode == tokenSidecarLockingScript);
-      require(tx.outputs[7].tokenCategory == parityTokenId);
+      require(tx.outputs[7].tokenCategory == paryonTokenId);
       require(tx.outputs[7].tokenAmount == redeemAmountTokens);
 
       // Optional ninth output for token change or BCH change
       if (tx.outputs.length > 8) {
         // Protect minting capability
-        bool noTokenOrParityTokens = tx.outputs[8].tokenCategory == 0x || tx.outputs[8].tokenCategory == parityTokenId;
-        require(noTokenOrParityTokens);
+        bool noTokenOrParyonTokens = tx.outputs[8].tokenCategory == 0x || tx.outputs[8].tokenCategory == paryonTokenId;
+        require(noTokenOrParyonTokens);
       }
 
       // Optional tenth output for BCH change

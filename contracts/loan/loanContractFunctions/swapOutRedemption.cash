@@ -8,7 +8,7 @@ pragma cashscript ^0.12.0;
     byte identifier == 0x06
 */
 
-// minimumLoanDebtForSwapOut = 100.00 ParityUSD
+// minimumLoanDebtForSwapOut = 100.00 ParyonUSD
 
 contract swapOutRedemption(
   bytes32 redemptionTokenId
@@ -23,10 +23,10 @@ contract swapOutRedemption(
     function swapOutRedemption(){
       // Require function to be at inputIndex 2
       require(this.activeInputIndex == 2);
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
 
       // Authenticate Loan being redeemed at inputIndex 0, nftCommitment checked below
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
 
       // Parse loan state
       bytes loanState = tx.inputs[0].nftCommitment;

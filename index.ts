@@ -1,4 +1,4 @@
-import artifactParity from './artifacts/Parity.js';
+import artifactBorrowing from './artifacts/Borrowing.js';
 import artifactPriceContract from './artifacts/PriceContract.js';
 import artifactLoan from './artifacts/Loan.js';
 import artifactLoanSidecar from './artifacts/LoanSidecar.js';
@@ -25,8 +25,8 @@ import artifactLoanKeyFactory from './artifacts/LoanKeyFactory.js';
 import artifactLoanKeyOriginEnforcer from './artifacts/LoanKeyOriginEnforcer.js';
 import artifactLoanKeyOriginProof from './artifacts/LoanKeyOriginProof.js';
 
-export const parityArtifacts = {
-  artifactParity,
+export const paryonArtifacts = {
+  artifactBorrowing,
   artifactPriceContract,
   artifactLoan,
   artifactLoanSidecar,

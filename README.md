@@ -1,18 +1,18 @@
-# Parity Contracts
+# Paryon Contracts
 
-This repo contains the CashScript smart contracts for ParityUSD.
+This repo contains the CashScript smart contracts for ParyonUSD.
 It also contains the contract documentation and schematics.
 
 ## Overview
 
 - `contracts` - folder containing the CashScript `.cash` contract files
-- `contract_docs` - documentation for the ParityUSD smart contract system
-- `contract_schematics` - schematics of the ParityUSD smart contract system
+- `contract_docs` - documentation for the ParyonUSD smart contract system
+- `contract_schematics` - schematics of the ParyonUSD smart contract system
 - `artifacts` - generated folder with the compiled artifacts output
 
 ## Contract Details
 
-The ParityUSD contract system consists of a total of 26 contracts:
+The ParyonUSD contract system consists of a total of 26 contracts:
 
 <pre>
 contracts/
@@ -46,7 +46,7 @@ contracts/
 │   ├── Payout.cash
 │   ├── StabilityPool.cash
 │   └── StabilityPoolSidecar.cash
-├──  Parity.cash
+├──  Borrowing.cash
 ├──  PriceContract.cash
 </pre>
 
@@ -76,4 +76,4 @@ Similarly, you could change the artifact output file format to `json`.
 
 ## Contract Tests
 
-There is a dedicated repo `parity_testing_suite` for a Parity Contract tests, the transaction building tests are in the `parity_library` repo.
+There is a dedicated repo `paryon_testing_suite` for a Paryon Contract tests, the transaction building tests are in the `paryon_library` repo.

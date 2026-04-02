@@ -1,7 +1,7 @@
 pragma cashscript ^0.12.0;
 
 // Redeem loan contract function
-// Is used by a redemption to finalize the redemption process, redeems ParityUSD tokens for BCH collateral from loan
+// Is used by a redemption to finalize the redemption process, redeems ParyonUSD tokens for BCH collateral from loan
 // Any redemption still pending when a newer period starts can be cancelled
 // This is to prevent the free option problem
 
@@ -16,7 +16,7 @@ contract redeemLoan(
   int periodLengthBlocks
   ) {
       // function redeemOrCancel
-      // Finalize redemption process, redeems ParityUSD tokens for BCH collateral from loan
+      // Finalize redemption process, redeems ParyonUSD tokens for BCH collateral from loan
       // If the redemption is still pending when a newer period starts, the redemption can be cancelled instead
       // The redemption pays for the transaction fees (normally no external fee input required).
       //
@@ -26,10 +26,10 @@ contract redeemLoan(
     function redeemOrCancel(){
       // Require function to be at inputIndex 2
       require(this.activeInputIndex == 2);
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
 
       // Authenticate loan at inputIndex 0, nftCommitment checked later
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
 
       // Authenticate redemption at inputIndex 3
       require(tx.inputs[3].tokenCategory == redemptionTokenId + 0x01);
@@ -111,10 +111,10 @@ contract redeemLoan(
       require(tx.outputs[2].value == 1000);
       require(tx.outputs[2].tokenAmount == 0);
 
-      // Burn redeemed ParityUSD by sending to unspendable opreturn output at index 3
+      // Burn redeemed ParyonUSD by sending to unspendable opreturn output at index 3
       require(tx.outputs[3].lockingBytecode == new LockingBytecodeNullData([0x]));
       if(effectiveRedemptionAmount > 0){
-        require(tx.outputs[3].tokenCategory == parityTokenId);
+        require(tx.outputs[3].tokenCategory == paryonTokenId);
         require(tx.outputs[3].tokenAmount == effectiveRedemptionAmount);
       } else {
         require(tx.outputs[3].tokenCategory == 0x);

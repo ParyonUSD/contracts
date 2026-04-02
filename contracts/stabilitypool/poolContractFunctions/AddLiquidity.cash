@@ -1,7 +1,7 @@
 pragma cashscript ^0.12.0;
 
 // AddLiquidity pool contract function
-// Allows user to add ParityUSD to the stabilityPool and receive a staking receipt NFT
+// Allows user to add ParyonUSD to the stabilityPool and receive a staking receipt NFT
 
 /*  --- State Immutable NFT ---
     byte identifier == 0x01
@@ -12,16 +12,16 @@ pragma cashscript ^0.12.0;
     bytes amountStakedReceipt (tokens)
 */
 
-// minimumToStake = 100.00 ParityUSD
+// minimumToStake = 100.00 ParyonUSD
 
 // Note: When staking, the epochReceipt is set to the next epoch (current epoch pool + 1)
 // Because of this, user cannot withdraw in the same epoch as they staked
 
 contract AddLiquidity(
-  bytes32 parityTokenId
+  bytes32 paryonTokenId
   ) {
       // function addToPool
-      // Allows users to add ParityUSD to the stabilityPool and receive a staking receipt with staked amount & next epoch recorded.
+      // Allows users to add ParyonUSD to the stabilityPool and receive a staking receipt with staked amount & next epoch recorded.
       //
       // Inputs: 00-stabilityPool, 01-stabilityPoolSidecar, 02-addToPool, ??-feeBch, ??-userTokens
       // Outputs: 00-stabilityPool, 01-stabilityPoolSidecar, 02-addToPool, 03-receipt, ??-changeTokens, ??-changeBch
@@ -42,7 +42,7 @@ contract AddLiquidity(
       require(tx.outputs[0].nftCommitment == tx.inputs[0].nftCommitment);
 
       // Check added token amount is at least minimumToStake
-      // Only ParityUSD tokens are allowed to be added to TokenSidecarPool (enforced by the StabilityPoolSidecar)
+      // Only ParyonUSD tokens are allowed to be added to TokenSidecarPool (enforced by the StabilityPoolSidecar)
       int addedTokenAmount = tx.outputs[1].tokenAmount - tx.inputs[1].tokenAmount;
       require(addedTokenAmount >= 100_00);
 
@@ -68,9 +68,9 @@ contract AddLiquidity(
 
       // Optionally create change output for tokens/bch at outputIndex 4
       if (tx.outputs.length > 4) {
-        // should have parityUsd tokens or no tokens at all
-        bool noTokenOrParityTokens = tx.outputs[4].tokenCategory == 0x || tx.outputs[4].tokenCategory == parityTokenId;
-        require(noTokenOrParityTokens);
+        // should have paryonUsd tokens or no tokens at all
+        bool noTokenOrParyonTokens = tx.outputs[4].tokenCategory == 0x || tx.outputs[4].tokenCategory == paryonTokenId;
+        require(noTokenOrParyonTokens);
       }
 
       // Optionally create bch-change output at outputIndex 5

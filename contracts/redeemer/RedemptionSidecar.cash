@@ -11,7 +11,7 @@ pragma cashscript ^0.12.0;
     bytes20 redeemerPkh
     bytes4 redemptionPrice
 */
-// The redemptionTokenSidecar holds ParityUSD tokens and no NFT
+// The redemptionTokenSidecar holds ParyonUSD tokens and no NFT
 
 contract RedemptionSidecar() {
   // function attach

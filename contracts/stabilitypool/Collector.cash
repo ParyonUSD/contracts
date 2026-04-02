@@ -9,7 +9,7 @@ pragma cashscript ^0.12.0;
 */
 
 contract Collector(
-  bytes32 parityTokenId,
+  bytes32 paryonTokenId,
   bytes lockingBytecodeProtocolFee
 ) {
   // function collect
@@ -23,15 +23,15 @@ contract Collector(
     require(this.activeInputIndex == 4);
 
     // Authenticate PriceContract at inputIndex 0
-    require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+    require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
     require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
     // Authenticate Loan at inputIndex 1
-    require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+    require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
     require(tx.inputs[1].nftCommitment.split(1)[0] == 0x01);
 
     // Authenticate loan functionContract at inputIndex 3
-    require(tx.inputs[3].tokenCategory == parityTokenId);
+    require(tx.inputs[3].tokenCategory == paryonTokenId);
     require(tx.inputs[3].nftCommitment == 0x07);
 
     // The interest payment calculation happens in the payInterest functionContract

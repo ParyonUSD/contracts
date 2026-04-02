@@ -1,6 +1,6 @@
 pragma cashscript ^0.12.0;
 
-// Parity Loan contract, which holds the BCH collateral for the loan
+// Loan contract, which holds the BCH collateral for the loan
 // Always tied to a tokensidecar and a loanContractFunction
 
 // LoanTokenId (the tokenid of the loankey) state is offloaded to loanTokenSidecar by keeping an NFT with the loanTokenId
@@ -31,10 +31,10 @@ contract Loan(
       require(tx.inputs[sidecarInputIndex].outpointIndex == tx.inputs[this.activeInputIndex].outpointIndex + 1);
 
       // Authenticate Loancontract function
-      // Loan contract functions are identified by parityTokenId + a commitment of a single byte
-      bytes32 parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory.split(32)[0];
+      // Loan contract functions are identified by paryonTokenId + a commitment of a single byte
+      bytes32 paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory.split(32)[0];
       int nftFunctionInputIndex = this.activeInputIndex + 2;
-      require(tx.inputs[nftFunctionInputIndex].tokenCategory == parityTokenId);
+      require(tx.inputs[nftFunctionInputIndex].tokenCategory == paryonTokenId);
       bytes commitmentNftFunction = tx.inputs[nftFunctionInputIndex].nftCommitment;
       require(commitmentNftFunction.length == 1);
     }

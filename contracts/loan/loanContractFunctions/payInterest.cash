@@ -25,12 +25,12 @@ contract payInterest(
       require(this.activeInputIndex == 3);
 
       // Authenticate PriceContract at inputIndex 0
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
       // Authenticate Loan at inputIndex 1, nftCommitment checked below
-      require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
 
       // Parse loan state
       // Splitting up state into bytes7, bytes6, bytes5 and bytes9 which totals bytes27

@@ -23,7 +23,7 @@ Exactly-self-replicating covenants are UTXOs which enforce they are recreated ex
 ### State-mutating covenants
 State-mutating covenants are UTXOs which enforce they are almost exactly recreated except for state in their nft commitment. These UTXOs will also always stay available from the moment of their creation, but the nftCommitment kept in the mutable/minting NFT will mutate over time.
 
-- Parity Borrow contract
+- Borrowing contract
 - Price contracts
 
 ### State-and-balance-mutating covenants
@@ -34,7 +34,7 @@ State-and-balance-mutating covenants are UTXOs which enforce they are recreated 
 ### Conditionally-replicating covenants
 Conditionally-replicating covenants are UTXOs which only conditionally enforce they are recreated. These UTXOs won't stay available indefinitely.
 
-- Parity Loans
+- Paryon Loans
 - independent child contracts
   - redemptions
   - collector contract
@@ -47,7 +47,7 @@ The stability pool sidecar is 'Always-self-replicating', loan sidecars are 'Cond
 
 ## Checks for Self-replicating Covenants
 
-example from `Parity.cash`
+example from `Borrowing.cash`
 
 Notice the 5 checks `lockingBytecode`, `tokenCategory`, `value`, `tokenAmount` & `nftCommitment`
 where `tokenCategory` also checks the NFT capability
@@ -57,7 +57,7 @@ where `tokenCategory` also checks the NFT capability
       require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode, "Recreate contract at output0 - invalid lockingBytecode");
       require(tx.outputs[0].tokenCategory == tx.inputs[0].tokenCategory, "Recreate contract at output0 - invalid tokenCategory");
       require(tx.outputs[0].value == 1000, "Recreate contract at output0 - needs to hold exactly 1000 sats");
-      require(tx.outputs[0].nftCommitment == periodParityBytes);
+      require(tx.outputs[0].nftCommitment == periodBorrowingBytes);
 
       // Calculate amount borrowed, enforce minimum debt
       int borrowedAmount = tx.inputs[0].tokenAmount - tx.outputs[0].tokenAmount;
@@ -68,7 +68,7 @@ When dealing with tokencategories which do not have fungible tokens like the Sta
 
 ## Verifying Authority
 
-Four tokens have special authority with regards to Parity Loans namely
+Four tokens have special authority with regards to Paryon Loans namely
 - loankey/managerKey
 - the stability pool
 - the redeemer
@@ -80,8 +80,8 @@ This authority needs to be carefully validated, especially when the same tokenId
 
 With contracts holding minting NFTs, all outputs need to be carefully controlled in the covenant contract code, so no additional (minting) NFTs can unintentionally be created in other outputs.
 
-There's 4 Mint-Authorities in ParityUSD
-- Parity Borrow contract
+There's 4 Mint-Authorities in ParyonUSD
+- Borrowing contract
 - Redeemer
 - loanKey Factory
 - Stability Pool (together with the created Payout contract!)
@@ -92,12 +92,12 @@ Keeping track of time in a covenant is difficult because there is no global info
 
 Instead there needs to be a mechanism where the old time is kept in state and this can be updated with a newer time that passes an OP_CHECKLOCKTIMEVERIFY check. This guarantees because of the transaction level locktime that this time is in the past.
 
-In Parity there are two places where we track time (the system period, where each period is roughly one day)
+In Paryon there are two places where we track time (the system period, where each period is roughly one day)
 - the stability pool
-- Parity Borrow contract
+- Borrowing contract
 
-For the stability pool, the stakers and the parity server have reason to update this period state. There is also just one UTXO so it's easy to update this by making a transaction.
-For the Parity Borrow contract, there can be multiple UTXOs and they could even be behind in the state they are tracking. This is not a problem however as users have an incentive to update the state to the latest possible period upon interaction. Only the user loses when he borrows at an old period because he will have to make additional interest payments.
+For the stability pool, the stakers and the paryon server have reason to update this period state. There is also just one UTXO so it's easy to update this by making a transaction.
+For the Borrowing contract, there can be multiple UTXOs and they could even be behind in the state they are tracking. This is not a problem however as users have an incentive to update the state to the latest possible period upon interaction. Only the user loses when he borrows at an old period because he will have to make additional interest payments.
 
 ## Standardness rules
 
@@ -140,7 +140,7 @@ If an NFT is present, its capability is read together with its category by the `
 
 ```solidity
 // Authenticate loan at inputIndex 1, nftCommitment checked later
-require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
 ```
 
 See the [CashTokens Gotchas](https://cashscript.org/docs/guides/cashtokens#cashtokens-gotchas) in the CashScript docs for more information on this and other potential surprises.

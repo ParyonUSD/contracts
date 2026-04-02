@@ -1,14 +1,14 @@
 pragma cashscript ^0.12.0;
 
-// StabilityPoolSidecar contract holding ParityUSD tokens for the pool
+// StabilityPoolSidecar contract holding ParyonUSD tokens for the pool
 // Custom sidecar allowing for special outputIndex when called from liquidateLoan function
-// Has extra check so it can only hold ParityUSD tokens or no tokens at all
+// Has extra check so it can only hold ParyonUSD tokens or no tokens at all
 
-// Holds the ParityUSD tokens
+// Holds the ParyonUSD tokens
 /*  --- No NFT ---  */
 
 contract StabilityPoolSidecar(
-    bytes32 parityTokenId
+    bytes32 paryonTokenId
   ) {
   function attach() {
     // Authenticate StabilityPool
@@ -27,9 +27,9 @@ contract StabilityPoolSidecar(
     require(tx.outputs[outputIndex].lockingBytecode == tx.inputs[this.activeInputIndex].lockingBytecode);
     require(tx.outputs[outputIndex].nftCommitment == 0x);
 
-    // TokenSidecar either holds parity tokens or no tokens (zero balance)
-    bool hasParityTokenId = tx.outputs[outputIndex].tokenCategory == parityTokenId;
+    // TokenSidecar either holds paryon tokens or no tokens (zero balance)
+    bool hasParyonTokenId = tx.outputs[outputIndex].tokenCategory == paryonTokenId;
     bool hasNoTokens = tx.outputs[outputIndex].tokenCategory == 0x;
-    require(hasParityTokenId || hasNoTokens);
+    require(hasParyonTokenId || hasNoTokens);
   }
 }

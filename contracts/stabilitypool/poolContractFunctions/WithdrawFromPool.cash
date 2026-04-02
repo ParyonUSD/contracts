@@ -1,7 +1,7 @@
 pragma cashscript ^0.12.0;
 
 // WithdrawFromPool pool contract function
-// Allows user to withdraw ParityUSD from the stabilityPool by returning their staking receipt NFT
+// Allows user to withdraw ParyonUSD from the stabilityPool by returning their staking receipt NFT
 // To withdraw, the staking receipt should have a receipt with an epochReceipt matching the current pool epoch
 // The epochReceipt and amountStakedReceipt are updated by the Payout contract and accounts for any funds used in liquidations
 // Any BCH earnings of the StabilityPool in this epoch are paid out pro-rata to the withdrawer based on their stake share
@@ -24,7 +24,7 @@ pragma cashscript ^0.12.0;
 // - Division is integer division and truncates toward 0 (effectively floor for non-negative values)
 // - When we compute ratio-based amounts, we multiply first and divide last to retain maximum precision
 // - There are two ratio based calculations: reducedWithdrawalAmount and proRataPoolEarnings
-// - For reducedWithdrawalAmount token amount values are rounded down to the nearest token unit, so by at most 0.01 ParityUSD
+// - For reducedWithdrawalAmount token amount values are rounded down to the nearest token unit, so by at most 0.01 ParyonUSD
 // - For BCH earnings (proRataPoolEarnings) the result is rounded down by at most 1 sat
 // - Overall, rounding is conservative: the pool never overpays out tokens or BCH earnings
 //   Rounding only affects how the last cent/satoshi of the fixed pool is split between users and how much remains as dust
@@ -32,7 +32,7 @@ pragma cashscript ^0.12.0;
 contract WithdrawFromPool(
   ) {
     // function withdraw
-    // Allows ParityUSD stakers to withdraw their tokens from the StabilityPool, pro-rata BCH earnings and stake reduction are applied at withdrawal.
+    // Allows ParyonUSD stakers to withdraw their tokens from the StabilityPool, pro-rata BCH earnings and stake reduction are applied at withdrawal.
     //
     // Inputs: 00-StabilityPool, 01-stabilityPoolSidecar, 02-WithdrawFromPool, 03-userReceipt, 04-feeBch
     // Outputs: 00-StabilityPool, 01-stabilityPoolSidecar, 02-WithdrawFromPool, 03-withdrawnTokens, ?04-stakeEarningsBch, ?04/05-changeBch

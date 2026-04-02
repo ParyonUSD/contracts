@@ -8,19 +8,19 @@ pragma cashscript ^0.12.0;
 
 contract LoanKeyOriginEnforcer(
   bytes loanKeyFactoryTokenId,
-  bytes parityTokenId
+  bytes paryonTokenId
 ){
     // function enforce
     // Enforce that the loanKey used in the borrowing transaction is created by the LoanKeyFactory.
     //
-    // Inputs: 00-parity, 01-pricecontract, 02-LoanKeyOriginEnforcer, 03-LoanKeyOriginProof, 04-BchCollateral
+    // Inputs: 00-borrowing, 01-pricecontract, 02-LoanKeyOriginEnforcer, 03-LoanKeyOriginProof, 04-BchCollateral
 
   function enforce() {
-    // Authenticate parity borrowing contract
-    require(tx.inputs[0].tokenCategory == parityTokenId + 0x02);
+    // Authenticate borrowing contract
+    require(tx.inputs[0].tokenCategory == paryonTokenId + 0x02);
 
     // Authenticate price contract
-    require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+    require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
     require(tx.inputs[1].nftCommitment.split(1)[0] == 0x00);
 
     // Enforce LoanKeyOriginEnforcer at inputIndex 2

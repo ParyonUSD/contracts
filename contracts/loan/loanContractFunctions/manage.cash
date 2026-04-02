@@ -8,8 +8,8 @@ pragma cashscript ^0.12.0;
 */
 
 // for partial repayments:
-// minimumDebt = 100.00 ParityUSD
-// minimumRepay = 100.00 ParityUSD
+// minimumDebt = 100.00 ParyonUSD
+// minimumRepay = 100.00 ParyonUSD
 
 // Note: This function can only withdraw collateral if there are no ongoing redemptions against the loan
 
@@ -31,12 +31,12 @@ contract manageLoan(
       require(this.activeInputIndex == 3);
 
       // Authenticate PriceContract at inputIndex 0
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
       // Authenticate Loan at inputIndex 1, nftCommitment checked later
-      require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
 
       // Check loanTokenId from tokensidecar at inputIndex2
       bytes loanTokenId = tx.inputs[2].tokenCategory;
@@ -129,11 +129,11 @@ contract manageLoan(
       require(tx.outputs[functionNftOutputIndex].tokenAmount == 0);
 
       if(repayAmount > 0){
-        // Burn repaid ParityUSD by sending to unspendable opreturn output at index 5
+        // Burn repaid ParyonUSD by sending to unspendable opreturn output at index 5
         int opreturnOutputIndex = 5;
         // If the loan is closed, the opreturn output is at index 2
         if(closeLoan) opreturnOutputIndex = 2;
-        require(tx.outputs[opreturnOutputIndex].tokenCategory == parityTokenId);
+        require(tx.outputs[opreturnOutputIndex].tokenCategory == paryonTokenId);
         require(tx.outputs[opreturnOutputIndex].tokenAmount == repayAmount);
         require(tx.outputs[opreturnOutputIndex].lockingBytecode == new LockingBytecodeNullData([0x]));
       }

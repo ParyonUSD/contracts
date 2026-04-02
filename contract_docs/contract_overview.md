@@ -42,16 +42,16 @@
 
 ## High Level Design
 
-At a high level the ParityUSD contract system consists of 6 parts:
+At a high level the ParyonUSD contract system consists of 6 parts:
 
-1) The Borrowing contract (which holds the ParityUSD reserves)
+1) The Borrowing contract (which holds the ParyonUSD reserves)
 2) The Loan contracts
 3) The Price contract
 4) The Stability Pool (aka the liquidator or staking pool)
 5) The Redeemer
 6) The LoanKey Factory
 
-When looking at the `parity_contracts` repo you can see the same structure. `Parity.cash` refers to the top-level borrowing contract and the `loanKey` folder refers to the 'LoanKey Factory' functionality.
+When looking at the `paryon_contracts` repo you can see the same structure. `Borrowing.cash` refers to the top-level borrowing contract and the `loanKey` folder refers to the 'LoanKey Factory' functionality.
 
 ```
 contracts/
@@ -59,16 +59,16 @@ contracts/
   ├── loanKey/
   ├── redeemer/
   ├── stabilitypool/
-  ├── Parity.cash
+  ├── Borrowing.cash
   └── PriceContract.cash
 ```
 
-When setting up the ParityUSD smart contract system, 5 tokenIds need to be provided in `ParityDeployment`.
-This is because the borrowing contracts, the loans and the price contracts all share the `parityTokenId`.
+When setting up the ParyonUSD smart contract system, 5 tokenIds need to be provided in `ParyonDeployment`.
+This is because the borrowing contracts, the loans and the price contracts all share the `paryonTokenId`.
 
 ```ts
   tokenIds: {
-    parityTokenId: '9b560c75a691222c839a80048a33e93f80111af1b8492dfe90c839d6078dc0ea',
+    paryonTokenId: '9b560c75a691222c839a80048a33e93f80111af1b8492dfe90c839d6078dc0ea',
     poolTokenId: '6991062b640e347304a72a0f66506b487d428a98a132af7624e8c1c8d1291695',
     redeemerTokenId: '95378105459f384acb33635ff834d51d90f236916b48326f73626841d581a18d',
     loanKeyFactoryTokenId: '5008018b4c0b84eded6ff076b771a59de426ab207205a2f77daa8d2793d929bd',
@@ -76,15 +76,15 @@ This is because the borrowing contracts, the loans and the price contracts all s
   },
 ```
 
-Let's discuss each of the 6 parts of the Parity system:
+Let's discuss each of the 6 parts of the Paryon system:
 
 ### Borrowing contract
 
-1st the Parity borrowing contract, this contract holds the ParityUSD and is responsible for creating loans with a correct initial state which meet the minimum collateral requirements. Technically this means that the borrowing contract holds a minting NFT. The creation of a loan is of course dependent on the current market price but that is the role of the Price contracts. This contract holds the full ParityUSD stablecoin supply initially. Note that there can be multiple instances of this contract to allow for parallelism.
+1st the Borrowing contract, this contract holds the ParyonUSD and is responsible for creating loans with a correct initial state which meet the minimum collateral requirements. Technically this means that the borrowing contract holds a minting NFT. The creation of a loan is of course dependent on the current market price but that is the role of the Price contracts. This contract holds the full ParyonUSD stablecoin supply initially. Note that there can be multiple instances of this contract to allow for parallelism.
 
 ### Price contract
 
-2nd is the Parity priceContracts, this contract is responsible for updating its own state with the latest price info and sharing this latest price info with other contracts in the parity system. For this function to update its own state, the contract needs a mutable NFT. Note here also that there can be multiple instances of this contract to allow for parallelism.
+2nd is the Paryon priceContracts, this contract is responsible for updating its own state with the latest price info and sharing this latest price info with other contracts in the paryon system. For this function to update its own state, the contract needs a mutable NFT. Note here also that there can be multiple instances of this contract to allow for parallelism.
 
 ### Loan contracts
 
@@ -92,11 +92,11 @@ Let's discuss each of the 6 parts of the Parity system:
 
 ### Stability Pool
 
-4th is the stability pool, which holds the staked ParityUSD used for liquidations. To keep track of the stakers, the stability pool issues receipts. These receipts can be used to withdraw again from the pool.
+4th is the stability pool, which holds the staked ParyonUSD used for liquidations. To keep track of the stakers, the stability pool issues receipts. These receipts can be used to withdraw again from the pool.
 
 The StabilityPool, as the name implies, guards the system stability by liquidating bad loans. The stabilityPool also collects interest from the loans, this is done through the Collector contract.
 
-For these earnings, the pool regularly creates payout contracts where stakers can claim their part of the stability pool earnings. Technically, this means that the stability pool holds a minting NFT to create these receipts and payout contracts. The stabilityPool needs a tokenSidecar to carry ParityUSD tokens besides its own minting NFT.
+For these earnings, the pool regularly creates payout contracts where stakers can claim their part of the stability pool earnings. Technically, this means that the stability pool holds a minting NFT to create these receipts and payout contracts. The stabilityPool needs a tokenSidecar to carry ParyonUSD tokens besides its own minting NFT.
 
 2/8 loanFunctions are for interacting with the stabilitypool: `liquidate` & `payInterest`.
 
@@ -104,7 +104,7 @@ For these earnings, the pool regularly creates payout contracts where stakers ca
 5th is the redeemer contract, which processes redemptions against target loans. To create individual redemptions, the Redeemer needs its own Minting NFT. Redemption contracts are relatively complex as there are three parts to them:
 
 1. The target loan, this part can be changed so is kept in a mutable NFT. 
-2. The ParityUSD to redeem against BCH, this is kept in a dedicated tokensidecar.
+2. The ParyonUSD to redeem against BCH, this is kept in a dedicated tokensidecar.
 3. The immutable state with the redemption payout-address. 
 
 Because of this, an individual redemption exists out of 3 outputs.
@@ -114,9 +114,9 @@ Because of this, an individual redemption exists out of 3 outputs.
 
 ## Single Function Contracts
 
-In the ParityUSD design most contracts only have a single contract function, with the exceptions of `Parity.cash`, `PriceContract.cash`, `Redemption.cash` and `Collector.cash`. So instead of 1 big loan contract with 8 functions, each of the loan functions is a separate single-function helper contract. The ParityUSD contract system works by composing single function contracts that authenticate/require each other's presence in a transaction to enforce the full contract system's logic.
+In the ParyonUSD design most contracts only have a single contract function, with the exceptions of `Borrowing.cash`, `PriceContract.cash`, `Redemption.cash` and `Collector.cash`. So instead of 1 big loan contract with 8 functions, each of the loan functions is a separate single-function helper contract. The ParyonUSD contract system works by composing single function contracts that authenticate/require each other's presence in a transaction to enforce the full contract system's logic.
 
-This is a large part of the reason why ParityUSD has 26 contracts in total whereas the number of sub-systems is only the 6 outlined above. This is because there are a bunch of helper-contracts in the system which we'll go over in the next section.
+This is a large part of the reason why ParyonUSD has 26 contracts in total whereas the number of sub-systems is only the 6 outlined above. This is because there are a bunch of helper-contracts in the system which we'll go over in the next section.
 
 ## Helper Contracts
 
@@ -191,7 +191,7 @@ The `loanKeyOriginEnforcer` is an independent child contract created by the loan
 
 ## The Stability Pool 
 
-The Stability Pool holds staked ParityUSD which is put to work to earn yield for stakers from interest payments and liquidation profits.
+The Stability Pool holds staked ParyonUSD which is put to work to earn yield for stakers from interest payments and liquidation profits.
 
 ### Periods vs Epochs
 
@@ -204,9 +204,9 @@ Epoch 0 contains periods 0-9, Epoch 1 contains periods 10-19, etc.
 
 ### The Staking and Unstaking Mechanism
 
-Stakers can add liquidity to the stability pool by staking ParityUSD and earn interest from the loans. When they do so they receive a receipt which is post-dated to the start of the next epoch. Stakers can also remove liquidity from the stability pool by withdrawing their ParityUSD. When they do so they must return the receipt.
+Stakers can add liquidity to the stability pool by staking ParyonUSD and earn interest from the loans. When they do so they receive a receipt which is post-dated to the start of the next epoch. Stakers can also remove liquidity from the stability pool by withdrawing their ParyonUSD. When they do so they must return the receipt.
 
-Staking operates on epoch boundaries. Staked funds accrue interest only for complete epochs that start after their creation. When users stake ParityUSD, they receive a receipt for the next epoch. For example, if a staker stakes ParityUSD during period 15 (epoch 1), they receive a receipt for epoch 2 and will start earning interest from epoch 2 onwards. 
+Staking operates on epoch boundaries. Staked funds accrue interest only for complete epochs that start after their creation. When users stake ParyonUSD, they receive a receipt for the next epoch. For example, if a staker stakes ParyonUSD during period 15 (epoch 1), they receive a receipt for epoch 2 and will start earning interest from epoch 2 onwards. 
 
 The `AddLiquidity` contract calculates the next epoch as value for the `epochReceipt` state. This is because withdrawals can only occur within the same epoch as the receipt, withdrawal is locked until the start of the next epoch. The logic is enforced by the following code:
 
@@ -245,7 +245,7 @@ Staker rewards are distributed at epoch boundaries (every 10th period) through t
 
 ### The Liquidation Mechanism
 
-The `StabilityPool` contract holds a minting NFT with state about the pool, and it keeps the ParityUSD of stakers in the `StabilityPoolSidecar`. When the stabilityPool liquidates a loan (repays the ParityUSD loan debt and claims the BCH collateral), the earned BCH is stored on the `StabilityPool` UTXO until it is paid out to stakers through the `Payout` contract at epoch boundaries.
+The `StabilityPool` contract holds a minting NFT with state about the pool, and it keeps the ParyonUSD of stakers in the `StabilityPoolSidecar`. When the stabilityPool liquidates a loan (repays the ParyonUSD loan debt and claims the BCH collateral), the earned BCH is stored on the `StabilityPool` UTXO until it is paid out to stakers through the `Payout` contract at epoch boundaries.
 
 The BCH yield paid to the stakers comes from the interest paid by loans to the `Collector` and from the BCH earned through liquidating loans. Only tokens that have been staked for a full epoch can be used in liquidations (part of `totalStakedEpoch`).
 
@@ -255,7 +255,7 @@ On `NewPeriodPool`, the previously created `Collector` is also destroyed by send
 
 ## The Redemption Mechanism
 
-The redemption mechanism is crucial to the stability of ParityUSD and provides the primary incentive for borrowers to pay interest. It allows users to swap ParityUSD for the equivalent value of underlying collateral (Bitcoin Cash) at any time. Unlike liquidations, redemptions do not involve the stability pool.
+The redemption mechanism is crucial to the stability of ParyonUSD and provides the primary incentive for borrowers to pay interest. It allows users to swap ParyonUSD for the equivalent value of underlying collateral (Bitcoin Cash) at any time. Unlike liquidations, redemptions do not involve the stability pool.
 
 ### Redeemable Loans
 
@@ -289,7 +289,7 @@ A partial redemption reduces the collateral and outstanding debt of the loan but
 
 ### Starting a Redemption
 
-A redemption is created by interacting with the Redeemer contract. A redemption consists of 3 UTXOs, the redemption UTXO itself and two sidecar utxos. The first sidecar UTXO is the stateSideCar which holds state in an immutable NFT, and the second sidecar is the tokenSidecar which holds the ParityUSD tokens to use for the redemption. 
+A redemption is created by interacting with the Redeemer contract. A redemption consists of 3 UTXOs, the redemption UTXO itself and two sidecar utxos. The first sidecar UTXO is the stateSideCar which holds state in an immutable NFT, and the second sidecar is the tokenSidecar which holds the ParyonUSD tokens to use for the redemption. 
 
 The price used for the conversion of PUSD to BCH is locked in during the start of the redemption and is 0.5% below the oracle price. The `redemptionPrice` together with the `redeemerPkh` gets stored in the immutable state of the stateSidecar. The `targetLoanTokenId` and `redemptionAmount` are stored in mutable state of the redemption UTXO.
 
@@ -372,13 +372,13 @@ Note that the `oracleMigrationKey` can also change the layout of the nftCommitme
 
 ## Timekeeping
 
-Loans, redemptions, the stability pool, price contracts and parity borrowing contracts all have their own individual state stored in their respective NFT commitments. However there is one item of state which applies to the whole system and this is the time, which is tracked as the `period`.
+Loans, redemptions, the stability pool, price contracts and Borrowing contracts all have their own individual state stored in their respective NFT commitments. However there is one item of state which applies to the whole system and this is the time, which is tracked as the `period`.
 
-The `period` of the Parity system is a derived value from the current blockheight. The `period` is calculated through `startBlockHeight` and `periodLengthBlocks`. The current block height cannot be read directly so we use `locktime` to track this state which needs to be done with careful consideration.
+The `period` of the Paryon system is a derived value from the current blockheight. The `period` is calculated through `startBlockHeight` and `periodLengthBlocks`. The current block height cannot be read directly so we use `locktime` to track this state which needs to be done with careful consideration.
 
-The `period` state is both kept in the Parity borrowing contract for new loans and in the stabilityPool for collecting interest and paying out staking rewards.
+The `period` state is both kept in the Borrowing contract for new loans and in the stabilityPool for collecting interest and paying out staking rewards.
 
-The design requires that the stabilityPool `period` must be updated in a timely manner to reflect the blockheight but the parity borrowing contracts could be allowed to trail in the past. Borrowers are incentivized to update the `period` when they create a loan as they do not want to be charged for extra interest periods.
+The design requires that the stabilityPool `period` must be updated in a timely manner to reflect the blockheight but the Borrowing contracts could be allowed to trail in the past. Borrowers are incentivized to update the `period` when they create a loan as they do not want to be charged for extra interest periods.
 
 The length of each `period` is a globally configurable parameter, currently set to 144 blocks or approximately one day.
 
@@ -433,7 +433,7 @@ One benefit of using a unique `LoanTokenId` as loan identifier is that it become
 
 ## Minimum Loan, Stake & Redemption Sizes
 
-The ParityUSD contract system strictly enforces minimum sizes for loans, staking and redemptions, all set to a minimum size of 100.00 PUSD.
+The ParyonUSD contract system strictly enforces minimum sizes for loans, staking and redemptions, all set to a minimum size of 100.00 PUSD.
 
 A minimum on loan size is required so the redemption mechanism cannot be griefed and so there cannot be a huge amount of small "spam" loans created as a DOS attempt to cause UTXO congestion for normal users or in attempt to complicate keeping overview for interest payments or liquidations. The minimum loan size of course is also enforced during `manageLoan` where part of the loan debt is repaid, additionally the size of the remaining loan debt after repayment should also be at least 100 PUSD.
 
@@ -443,7 +443,7 @@ For similar reasons to the loans, the minimum size for staking and redemptions i
 
 ## Contract Setup Parameters
 
-When setting up the ParityUSD contract system a few parameters need to be decided, these also need to be provided in the `ParityDeployment` configuration.
+When setting up the ParyonUSD contract system a few parameters need to be decided, these also need to be provided in the `ParyonDeployment` configuration.
 
 ```ts
   contractParams: {
@@ -455,15 +455,15 @@ When setting up the ParityUSD contract system a few parameters need to be decide
   }
 ```
 
-Further, there are some parameters which need to be decided upon setup but are not part of the `ParityDeployment` configuration.
+Further, there are some parameters which need to be decided upon setup but are not part of the `ParyonDeployment` configuration.
 
 The number of UTXOs created during contract setup is important for enabling parallelism, as we'll discuss in the next section.
 
 ## Contract Concurrency
 
-Bitcoin Cash transactions can be validated in parallel because of local state, however each unconfirmed transaction chain still happens in sequence. This can become problematic when the same UTXO is being spent roughly simultaneously by different users. For ParityUSD to handle a very large number of users, we need to think about the problem of UTXO contention, to avoid so called 'race-conditions'. The solution is to create multiple identical contract UTXOs (threads) for contracts that need to serve concurrent users.
+Bitcoin Cash transactions can be validated in parallel because of local state, however each unconfirmed transaction chain still happens in sequence. This can become problematic when the same UTXO is being spent roughly simultaneously by different users. For ParyonUSD to handle a very large number of users, we need to think about the problem of UTXO contention, to avoid so called 'race-conditions'. The solution is to create multiple identical contract UTXOs (threads) for contracts that need to serve concurrent users.
 
-The specific number of thread UTXOs for each contract is decided during the parity-setup, so cannot be changed anymore after the initial contract deployment. There is no dynamic thread-spawning in the contract design.
+The specific number of thread UTXOs for each contract is decided during the paryon-setup, so cannot be changed anymore after the initial contract deployment. There is no dynamic thread-spawning in the contract design.
 
 The parts of the system which can have multiple UTXOs for each contract are the following:
 - The Borrowing Contract
@@ -477,7 +477,7 @@ We have tested and plan to launch with the following setup:
 
 ```ts
 const config = {
-  numberDuplicateParityUtxos: 10, // stateful
+  numberDuplicateParyonUtxos: 10, // stateful
   numberDuplicatePriceContractUtxos: 5, // stateful
   numberDuplicateLoanFunctionUtxos: 25, // stateless
   numberDuplicateRedeemerContractUtxos: 25, // stateless
@@ -508,11 +508,11 @@ Examples of this are
 
 These transaction fees are then hard-coded values based on the transaction size like `1500` or `2500` sats. Additional fees can always be added by adding a BCH input and corresponding change output. It is not possible to make the fees dynamic from inside the contract, as the contract cannot know the state of the mempool or fee market and thus cannot adjust fee rates by itself.
 
-The transactions where the operator always has to pay the fees are the `updatePrice` of the Price contract and `updatePeriodState` of the Parity Borrowing contract, as these contracts don't hold any BCH to spend.
+The transactions where the operator always has to pay the fees are the `updatePrice` of the Price contract and `updatePeriodState` of the Borrowing contract, as these contracts don't hold any BCH to spend.
 
 ## Trust In Transaction Building
 
-The Parity contracts do not lock down the users inputs and outputs, this is to allow for flexibility with regards to UTXO selection, HD wallet and to enable modular contract interactions.
+The Paryon contracts do not lock down the users inputs and outputs, this is to allow for flexibility with regards to UTXO selection, HD wallet and to enable modular contract interactions.
 
 However currently using BCH WalletConnect the transaction building is happening on the Dapp-side, meaning that the dapp is responsible/trusted for filling in the correct user-address for flexible destinations. A malicious dapp could misdirect the users PUSD, loankey or BCH outputs to an address different from the user address.
 

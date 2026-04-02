@@ -17,10 +17,10 @@ pragma cashscript ^0.12.0;
 */
 
 contract Redemption(
-    bytes32 parityTokenId
+    bytes32 paryonTokenId
   ) {
       // function finalizeRedemption
-      // Completes the redemption against the target loan, redeems ParityUSD tokens for BCH collateral
+      // Completes the redemption against the target loan, redeems ParyonUSD tokens for BCH collateral
       // Any redemption still pending when a newer period starts can be cancelled
       // The redemption pays for the transaction fees (normally no external fee input required).
       //
@@ -31,11 +31,11 @@ contract Redemption(
       require(this.activeInputIndex == 3);
 
       // Authenticate Loan at inputIndex 0
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x01);
 
       // Authenticate redeem loanFunction at inputIndex 2
-      require(tx.inputs[2].tokenCategory == parityTokenId);
+      require(tx.inputs[2].tokenCategory == paryonTokenId);
       require(tx.inputs[2].nftCommitment == 0x03);
 
       // Authenticate redemptionStateSidecar at inputIndex 4
@@ -78,7 +78,7 @@ contract Redemption(
         // Create tokenChangeOutput at output index 5
         require(tx.outputs[5].value == 1000);
         require(tx.outputs[5].lockingBytecode == redeemerLockingBytecode);
-        require(tx.outputs[5].tokenCategory == parityTokenId);
+        require(tx.outputs[5].tokenCategory == paryonTokenId);
         require(tx.outputs[5].tokenAmount == tokenChangeAmount);
       } else {
         // If no token change, optionally allow output index 5 for BCH change but prevent holding tokens
@@ -108,11 +108,11 @@ contract Redemption(
       require(this.activeInputIndex == 3);
 
       // Authenticate Loan at inputIndex 0
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x01);
 
       // Authenticate swapOutRedemption loanFunction at inputIndex 2
-      require(tx.inputs[2].tokenCategory == parityTokenId);
+      require(tx.inputs[2].tokenCategory == paryonTokenId);
       require(tx.inputs[2].nftCommitment == 0x06);
 
       // Authenticate redemptionStateSidecar at inputIndex 4
@@ -120,12 +120,12 @@ contract Redemption(
       require(tx.inputs[4].outpointIndex == tx.inputs[3].outpointIndex + 1);
 
       // Authenticate redemptionTokenSidecar at inputIndex 5
-      require(tx.inputs[5].tokenCategory == parityTokenId);
+      require(tx.inputs[5].tokenCategory == paryonTokenId);
       require(tx.inputs[5].outpointTransactionHash == tx.inputs[3].outpointTransactionHash);
       require(tx.inputs[5].outpointIndex == tx.inputs[3].outpointIndex + 2);
 
       // Authenticate Loan at inputIndex 6
-      require(tx.inputs[6].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[6].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[6].nftCommitment.split(1)[0] == 0x01);
 
       // Parse swappedIn loan state

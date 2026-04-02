@@ -30,8 +30,8 @@ contract changeInterest(
       require(nextInterestRateInt >= 0);
 
       // Authenticate Loan at inputIndex 0, nftCommitment checked below
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
 
       // Parse loan state
       bytes loanState = tx.inputs[0].nftCommitment;

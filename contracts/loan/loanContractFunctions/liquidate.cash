@@ -25,12 +25,12 @@ contract liquidateLoan(
       require(this.activeInputIndex == 3);
 
       // Authenticate PriceContract at inputIndex 0
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
       // Authenticate Loan at inputIndex 1, nftCommitment checked later
-      require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
 
       // Authenticate stabilityPool
       require(tx.inputs[4].tokenCategory == stabilityPoolTokenId + 0x02);

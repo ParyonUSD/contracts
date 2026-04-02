@@ -2,7 +2,7 @@ pragma cashscript ^0.12.0;
 
 // LiquidateLoan pool contract function
 // Enables the StabilityPool to liquidate any undercollateralized loan by repaying the loan's debt from its staked supply
-// The repayment of the debt is done by burning the parityUSD, this is done by sending them to an unspendable OP_RETURN output
+// The repayment of the debt is done by burning the paryonUSD, this is done by sending them to an unspendable OP_RETURN output
 
 /*  --- State Immutable NFT ---
     byte identifier == 0x02
@@ -12,10 +12,10 @@ pragma cashscript ^0.12.0;
 // remainingStakedEpoch = totalStakedEpoch - totalLiquidationThisEpoch
 
 contract LiquidateLoan(
-  bytes32 parityTokenId
+  bytes32 paryonTokenId
   ) {
     // function liquidate
-    // Repays the outstanding ParityUSD debt on a liquidated loan from the StabilityPoolSidecar's recorded supply
+    // Repays the outstanding ParyonUSD debt on a liquidated loan from the StabilityPoolSidecar's recorded supply
     // StabilityPool pays for the transaction fees (normally no external fee input required).
     //
     // Inputs: 00-pricecontract, 01-loan, 02-loanTokenSidecar, 03-LoanLiquidate, 04-stabilityPool, 05-stabilityPoolSidecar, 06-liquidateLoan, ?07-feeBch
@@ -26,15 +26,15 @@ contract LiquidateLoan(
       require(this.activeInputIndex== 6);
 
       // Authenticate PriceContract at inputIndex 0
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
       // Authenticate Loan at inputIndex 1
-      require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[1].nftCommitment.split(1)[0] == 0x01);
 
       // Authenticate loan functionContract at inputIndex 3
-      require(tx.inputs[3].tokenCategory == parityTokenId);
+      require(tx.inputs[3].tokenCategory == paryonTokenId);
       require(tx.inputs[3].nftCommitment == 0x01);
 
       // Authenticate stabilityPool at inputIndex 4
@@ -77,8 +77,8 @@ contract LiquidateLoan(
       require(tx.outputs[4].tokenCategory == tx.inputs[6].tokenCategory);
       require(tx.outputs[4].value == 1000);
 
-      // Burn repaid ParityUSD by sending to unspendable opreturn output at index 5
-      require(tx.outputs[5].tokenCategory == parityTokenId);
+      // Burn repaid ParyonUSD by sending to unspendable opreturn output at index 5
+      require(tx.outputs[5].tokenCategory == paryonTokenId);
       require(tx.outputs[5].tokenAmount == amountDebtToRepay);
       require(tx.outputs[5].lockingBytecode == new LockingBytecodeNullData([0x]));
 

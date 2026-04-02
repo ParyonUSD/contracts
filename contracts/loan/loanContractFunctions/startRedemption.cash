@@ -1,19 +1,19 @@
 pragma cashscript ^0.12.0;
 
 // StartRedemption loan contract function
-// Is used by a redemption to start the redemption process, attempting to redeem ParityUSD tokens for BCH collateral from loan
+// Is used by a redemption to start the redemption process, attempting to redeem ParyonUSD tokens for BCH collateral from loan
 
 /*  --- State Immutable NFT ---
     byte identifier == 0x04
 */
 
 // for partial redemptions:
-// minimumRedeemAmount = 100.00 ParityUSD
+// minimumRedeemAmount = 100.00 ParyonUSD
 
 // Note: startRedemption can be performed against loans with any status (newLoan, single period, mature loan)
-// Secondly, the minimumLoanDebtForSwapOut of 100.00 ParityUSD means that any loan with debt below this minimum
+// Secondly, the minimumLoanDebtForSwapOut of 100.00 ParyonUSD means that any loan with debt below this minimum
 // can always be redeemed even if it is not the lowest interest loan. This is to clean up tiny loans.
-// Loan debt below the minimum of 100.00 ParityUSD can happen if a redemption repays just short of the full loan debt
+// Loan debt below the minimum of 100.00 ParyonUSD can happen if a redemption repays just short of the full loan debt
 
 contract startRedemption(
   bytes32 redeemerTokenId
@@ -21,20 +21,20 @@ contract startRedemption(
       // function startRedemption
       // Redemption started against loan, update loan state to reflect the ongoing amount being redeemed
       //
-      // Inputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 05-Parity-tokens, 06-feeBch
+      // Inputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 05-Paryon-tokens, 06-feeBch
       // Outputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 05-redemption, 06-redemptionStateSidecar, 07-redemptionTokenSidecar, ??-changeTokens, ??-changeBch
 
     function startRedemption(){
       // Require startRedemption function to be at inputIndex 3
       require(this.activeInputIndex == 3);
-      bytes parityTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
+      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;
 
       // Authenticate PriceContract at inputIndex 0
-      require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);
 
       // Authenticate Loan at inputIndex 1, nftCommitment checked later
-      require(tx.inputs[1].tokenCategory == parityTokenId + 0x01);
+      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);
 
       // Authenticate redeemer at inputIndex 4
       require(tx.inputs[4].tokenCategory == redeemerTokenId + 0x02);

@@ -10,7 +10,7 @@ contract LoanKeyOriginProof() {
     // function attach
     // Ties together the LoanKeyOriginProof with the LoanKeyOriginEnforcer
     //
-    // Inputs: 00-parity, 01-pricecontract, 02-LoanKeyOriginEnforcer, 03-LoanKeyOriginProof, 04-BchCollateral
+    // Inputs: 00-borrowing, 01-pricecontract, 02-LoanKeyOriginEnforcer, 03-LoanKeyOriginProof, 04-BchCollateral
 
   function attach() {
     // Enforce LoanKeyOriginProof at inputIndex 3
