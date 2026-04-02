@@ -111,7 +111,7 @@ contract Redemption(
       require(tx.inputs[0].tokenCategory == parityTokenId + 0x01);
       require(tx.inputs[0].nftCommitment.split(1)[0] == 0x01);
 
-      // Authenticate swapOutRedemeption loanFunction at inputIndex 2
+      // Authenticate swapOutRedemption loanFunction at inputIndex 2
       require(tx.inputs[2].tokenCategory == parityTokenId);
       require(tx.inputs[2].nftCommitment == 0x06);
 
@@ -143,7 +143,7 @@ contract Redemption(
       // Check swappedOut pays higher interest
       require(swappedInCurrentInterest < swappedOutCurrentInterest);
 
-      // Check that both loan lastPeriodInterestPaid stats is equal (and thus are in the same period)
+      // Check that both loan lastPeriodInterestPaid states are equal (and thus are in the same period)
       require(swappedInlastPeriodInterestPaidBytes == swappedOutlastPeriodInterestPaidBytes);
 
       // Recreate redemption contract at output index 3

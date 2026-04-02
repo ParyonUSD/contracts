@@ -62,7 +62,7 @@ contract manageLoan(
       bool noRepayment = repayAmount == 0;
       bool isFullRepaymentOfRedeemableDebt = repayAmount == redeemableDebt;
 
-      // Check repayAmount is either zero, the minimum treshold OR full isFullRepayment (if less than minimum)
+      // Check repayAmount is either zero, the minimum threshold OR full isFullRepayment (if less than minimum)
       require(noRepayment || repayAmount >= 100_00 || isFullRepaymentOfRedeemableDebt, "RepayAmount loan needs to be in valid range");
       
       // RepayAmount should not exceed redeemableDebt
@@ -89,7 +89,7 @@ contract manageLoan(
 
         // Check newBorrowAmount is greater than minimumDebt
         int newBorrowAmount = borrowedAmount - repayAmount;
-        require(newBorrowAmount >= 100_00, "Invalid newBorrowAmount, needs to greater than minimumDebt");
+        require(newBorrowAmount >= 100_00, "Invalid newBorrowAmount, needs to be greater than minimumDebt");
 
         // Calculate minimum collateral
         int newCollateral = tx.outputs[1].value;

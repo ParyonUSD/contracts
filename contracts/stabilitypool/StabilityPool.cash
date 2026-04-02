@@ -1,6 +1,6 @@
 pragma cashscript ^0.12.0;
 
-// Contract for StabilityPool which holds the pool state and BCH earning from liquidations
+// Contract for StabilityPool which holds the pool state and BCH earnings from liquidations
 // Always tied to a StabilityPoolSidecar and a poolContractFunction
 
 // PoolContractFunction are responsible for the contract logic updating the nft state and the BCH value
@@ -22,7 +22,7 @@ pragma cashscript ^0.12.0;
 
 // Note:
 // - In LiquidateLoan, totalStakedEpoch remains the same, remainingStakedEpoch decreases.
-// - In WithdrawalFromPool, both totalStakedEpoch and remainingStakedEpoch decrease.
+// - In WithdrawFromPool, both totalStakedEpoch and remainingStakedEpoch decrease.
 // - In AddLiquidity, both totalStakedEpoch and remainingStakedEpoch remain the same, only the sidecar tokenAmount increases.
 // - In NewPeriodPool, totalStakedEpoch and remainingStakedEpoch are both set to the current staked amount in the sidecar
 //   This is because all tokens now count as staked for the new epoch and totalLiquidationThisEpoch is reset to zero.

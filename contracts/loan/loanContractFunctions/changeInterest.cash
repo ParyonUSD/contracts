@@ -46,7 +46,7 @@ contract changeInterest(
       // Check tokenKey provided at inputIndex3 matches loanTokenId
       require(tx.inputs[3].tokenCategory.split(32)[0] == loanTokenId);
       // Check if tokenKey matches loan owner or loan manager
-      // Enforce that there cannot be a manager using 0x00 as commitement (this indicates no manager)
+      // Enforce that there cannot be a manager using 0x00 as commitment (this indicates no manager)
       bool isLoanOwner = tx.inputs[3].tokenCategory == loanTokenId + 0x02;
       bool isLoanManager = tx.inputs[3].nftCommitment == interestManager && interestManager != 0x00;
       require(isLoanOwner || isLoanManager);
@@ -64,7 +64,7 @@ contract changeInterest(
       bytes20 fixedPartLoanState = loanState.split(20)[0];
       bytes27 newLoanCommitment = fixedPartLoanState + nextInterestRate + bytes5(interestManagerConfiguration);
 
-      // Recreate loan contract with new state and atleast same collateral
+      // Recreate loan contract with new state and at least same collateral
       require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode, "Recreate loan contract - invalid lockingBytecode");
       require(tx.outputs[0].tokenCategory == tx.inputs[0].tokenCategory, "Recreate loan contract - invalid tokenCategory");
       require(tx.outputs[0].nftCommitment == newLoanCommitment, "Invalid state loan contract - wrong nftCommitment");

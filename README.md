@@ -59,7 +59,7 @@ pnpm compile
 ```
 
 This command generates the CashScript artifacts from the contracts source files.
-The artifacts are generates as TS files to the `artifacts` folder.
+The artifacts are generated as TS files to the `artifacts` folder.
 
 Re-compiling artifacts from the same contracts source code will result in identical artifacts except for the `updatedAt` timestamp.
 Changing comments in the contract source code changes the `source`, `sourceMap` and `requires` in the compiled output.
@@ -76,4 +76,4 @@ Similarly, you could change the artifact output file format to `json`.
 
 ## Contract Tests
 
-There is a a dedicated repo `parity_testing_suite` for a Parity Contract tests, the transaction building tests are in the `parity_library` repo.
+There is a dedicated repo `parity_testing_suite` for a Parity Contract tests, the transaction building tests are in the `parity_library` repo.

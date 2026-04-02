@@ -13,15 +13,15 @@ There's four categories of covenants:
 
 Let's discuss each in more detail!
 
-### Exactely-self-replicating covenants
-Exactely-self-replicating covenants are UTXOs which enforce they are recreated exactely the same. These UTXOs will always stay available from the moment of their creation.
+### Exactly-self-replicating covenants
+Exactly-self-replicating covenants are UTXOs which enforce they are recreated exactly the same. These UTXOs will always stay available from the moment of their creation.
 
 - Redeemer
 - loanKey factory
 - nft functions
 
 ### State-mutating covenants
-State-mutating covenants are UTXOs which enforce they are almost exactely recreated except for state in their nft commitment. These UTXOs will also always stay available from the moment of their creation, but the nftCommitment kept int the mutable/minting NFT will mutate over time.
+State-mutating covenants are UTXOs which enforce they are almost exactly recreated except for state in their nft commitment. These UTXOs will also always stay available from the moment of their creation, but the nftCommitment kept in the mutable/minting NFT will mutate over time.
 
 - Parity Borrow contract
 - Price contracts
@@ -32,10 +32,10 @@ State-and-balance-mutating covenants are UTXOs which enforce they are recreated 
 - Stability Pool
 
 ### Conditionally-replicating covenants
-Conditionally-replicating covenants are UTXOs which only conditionally enforce they are recreated. These UTXOs won't stay available indefinately.
+Conditionally-replicating covenants are UTXOs which only conditionally enforce they are recreated. These UTXOs won't stay available indefinitely.
 
 - Parity Loans
-- independant child contracts
+- independent child contracts
   - redemptions
   - collector contract
   - payout contract
@@ -74,7 +74,7 @@ Four tokens have special authority with regards to Parity Loans namely
 - the redeemer
 - the price contracts
 
-This authorithy needs to be carfully validated, especially when the same tokenId can represent different authorities like in the case of the loankey/managerKey.
+This authority needs to be carefully validated, especially when the same tokenId can represent different authorities like in the case of the loankey/managerKey.
 
 ## Protecting Mint-Authority
 
@@ -90,7 +90,7 @@ There's 4 Mint-Authorities in ParityUSD
 
 Keeping track of time in a covenant is difficult because there is not global information available on blockheight.
 
-Instead there needs to be a mechanism where the old time is kept in state and this can be updated with a newer time that passes a check_locktimeverify checks. This guarentees because of the transaction level locktime that this time is in the past.
+Instead there needs to be a mechanism where the old time is kept in state and this can be updated with a newer time that passes a check_locktimeverify checks. This guarantees because of the transaction level locktime that this time is in the past.
 
 In Parity there is two places where we track time (the system period, where each period is roughly one day)
 - the stability pool
@@ -104,9 +104,9 @@ For the Parity Borrow contract, there can be multiple UTXOs and they could even 
 - Covenants can't commit to payout to arbitrary lockscripts (those can be non-standard)
 - Covenants can't commit to payouts below the dust limit (they're non standard)
 
-### Abitrary lockscripts
+### Arbitrary lockscripts
 
-The redemption mechanism needs to make sure it does not commit to non-standard lockscripts as this would prevent the redemption from being finalized. Therefor redemptions can only commit to a 20-byte pkh commitment when creating a redemption, from that it constructs the P2PKH locking bytecode for the redemption payout.
+The redemption mechanism needs to make sure it does not commit to non-standard lockscripts as this would prevent the redemption from being finalized. Therefore redemptions can only commit to a 20-byte pkh commitment when creating a redemption, from that it constructs the P2PKH locking bytecode for the redemption payout.
 
 ### Dust limit
 

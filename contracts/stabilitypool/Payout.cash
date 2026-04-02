@@ -23,7 +23,7 @@ pragma cashscript ^0.12.0;
 
 contract Payout() {
     // function claimPayout
-    // Allows stakers to claim the portion of the interest and liquidation earning they are entitled to for the epoch.
+    // Allows stakers to claim the portion of the interest and liquidation earnings they are entitled to for the epoch.
     //
     // Inputs: 00-Payout, 01-userReceipt, ?02-feeBch
     // Outputs: 00-Payout, 01-newUserReceipt, 02-userBchPayout
@@ -55,7 +55,7 @@ contract Payout() {
 
     // Calculate user payout amount
     // Pro-rata BCH payout: userShare = totalValue × userStaked / totalStaked
-    // Note: division by zero never happens as the totalStaked can only be zero if noone has a staking receipt for this epoch
+    // Note: division by zero never happens as the totalStaked can only be zero if no one has a staking receipt for this epoch
     int userPayoutAmount = int(totalPayoutValueBytes) * amountStakedReceipt / totalStakedEpoch;
     
     // Note that the Payout contract on creation is totalPayoutValue + 1000 sats

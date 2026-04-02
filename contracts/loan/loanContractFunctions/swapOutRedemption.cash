@@ -14,7 +14,7 @@ contract swapOutRedemption(
   bytes32 redemptionTokenId
   ) {
       // function swapOutRedemption
-      // Swaps the taget loan of an active redemption out for a lower interest paying loan
+      // Swaps the target loan of an active redemption out for a lower interest paying loan
       // The redemption can pay for the transaction fees of one redemption-swap (normally no external fee input required).
       //
       // Inputs: 00-loan, 01-loanTokenSidecar, 02-swapOutRedemption, 03-redemption, 04-redemptionStateSidecar, 05-redemptionTokenSidecar, 06-loanLowerInterest, 07-loanTokenSidecar, 08-swapInRedemption, ?09-feeBch

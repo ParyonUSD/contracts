@@ -2,7 +2,7 @@ pragma cashscript ^0.12.0;
 
 // Parity borrowing contract, lets users create PUSD loans by putting up BCH collateral
 // The borrower receives the borrowed PUSD and a loanKey NFT to manage the loan
-// The maximum borrow amount and protocols fees use the current exchange rate as provided by the PriceContract
+// The maximum borrow amount and protocol fees use the current exchange rate as provided by the PriceContract
 
 // Holds Fungible Token supply
 /*  --- Minting NFT---
@@ -52,7 +52,7 @@ contract Parity(
 
       // The amount borrowed is calculated through introspection, not passed explicitly
       int borrowedAmount = tx.inputs[0].tokenAmount - tx.outputs[0].tokenAmount;
-      // Enforce borrowedAmount is atleast minimum loan debt
+      // Enforce borrowedAmount is at least minimum loan debt
       require(borrowedAmount >= 100_00, "Invalid borrowedAmount, needs to be at least minimumDebt");
 
       // Read latest oracle price from pricecontract state

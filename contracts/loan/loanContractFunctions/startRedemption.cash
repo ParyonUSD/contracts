@@ -10,7 +10,7 @@ pragma cashscript ^0.12.0;
 // for partial redemptions:
 // minimumRedeemAmount = 100.00 ParityUSD
 
-// Note: startRedemption can be preformed against loans with any status (newLoan, single period, mature loan)
+// Note: startRedemption can be performed against loans with any status (newLoan, single period, mature loan)
 // Secondly, the minimumLoanDebtForSwapOut of 100.00 ParityUSD means that any loan with debt below this minimum
 // can always be redeemed even if it is not the lowest interest loan. This is to clean up tiny loans.
 // Loan debt below the minimum of 100.00 ParityUSD can happen if a redemption repays just short of the full loan debt
@@ -55,7 +55,7 @@ contract startRedemption(
       bytes redemptionAmountBytes = tx.outputs[5].nftCommitment.split(32)[1];
       int redemptionAmount = int(redemptionAmountBytes);
 
-      // Check range redemptionAmount: minimum treshold OR full isFullRedemption (if less than minimum)
+      // Check range redemptionAmount: minimum threshold OR full isFullRedemption (if less than minimum)
       bool isFullRedemption = redemptionAmount == redeemableDebt;
       require(redemptionAmount >= 100_00 || isFullRedemption, "redemptionAmount loan needs to be in valid range");
       // Calculate and check newAmountBeingRedeemed

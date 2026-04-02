@@ -1,6 +1,6 @@
 pragma cashscript ^0.12.0;
 
-// Parity Loan contract, which hold the BCH collateral for the loan
+// Parity Loan contract, which holds the BCH collateral for the loan
 // Always tied to a tokensidecar and a loanContractFunction
 
 // LoanTokenId (the tokenid of the loankey) state is offloaded to loanTokenSidecar by keeping an NFT with the loanTokenId

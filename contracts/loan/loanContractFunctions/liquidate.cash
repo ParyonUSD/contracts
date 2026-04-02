@@ -1,7 +1,7 @@
 pragma cashscript ^0.12.0;
 
 // Liquidate loan contract function
-// Is used to by the StabilityPool to liquidate undercollateralized loans
+// Is used by the StabilityPool to liquidate undercollateralized loans
 // The loan gets closed, the stabilityPool repays the loan's debt and takes the loan's BCH collateral in return
 
 /*  --- State Immutable NFT ---

@@ -2,7 +2,7 @@ pragma cashscript ^0.12.0;
 
 // PayInterest loan contract function
 // Is used by the Collector contract to trigger interest payments on loans
-// Calculates how much interest (BCH) loans pays based on the set interest rate (and if needed, the number of elapsed periods)
+// Calculates how much interest (BCH) a loan pays based on the set interest rate (and if needed, the number of elapsed periods)
 
 /*  --- State Immutable NFT ---
     byte identifier == 0x07

@@ -17,7 +17,7 @@ pragma cashscript ^0.12.0;
     bytes amountStakedReceipt (tokens)
 */
 
-// Note: In this unlikely event of an empty stability pool when all pool funds spent in liquidations
+// Note: In the unlikely event of an empty stability pool when all pool funds spent in liquidations
 // then early withdrawal of BCH earnings is not possible, only through the Payout contract at the end of the epoch
 
 // Note on arithmetic and rounding:

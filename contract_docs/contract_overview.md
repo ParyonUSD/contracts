@@ -51,7 +51,7 @@ At a high level the ParityUSD contract system consists of 6 parts:
 5) The Redeemer
 6) The LoanKey Factory
 
-When looking at the `parity_contracts` repo you can see the same structure. `Parity.cash` refers to the lop-level borrowing contract and the `loanKey` folder refers to the 'LoanKey Factory' functionality.
+When looking at the `parity_contracts` repo you can see the same structure. `Parity.cash` refers to the top-level borrowing contract and the `loanKey` folder refers to the 'LoanKey Factory' functionality.
 
 ```
 contracts/
@@ -84,7 +84,7 @@ Let's discuss each of the 6 parts of the Parity system:
 
 ### Price contract
 
-2nd is the Parity priceContracts, this contract is responsible for updating is own state with the latest price info and sharing this latest price info with other contracts in the parity system. For this function to update its own state, the contract needs a mutable NFT. Note here also that there can be multiple instances of this contract to allow for parallelism.
+2nd is the Parity priceContracts, this contract is responsible for updating its own state with the latest price info and sharing this latest price info with other contracts in the parity system. For this function to update its own state, the contract needs a mutable NFT. Note here also that there can be multiple instances of this contract to allow for parallelism.
 
 ### Loan contracts
 
@@ -94,14 +94,14 @@ Let's discuss each of the 6 parts of the Parity system:
 
 4th is the stability pool, which holds the staked ParityUSD used for liquidations. To keep track of the stakers, the stability pool issues receipts. These receipts can be used to withdraw again from the pool.
 
-The StabilityPool, as the new implies, guards the system stability by liquidating bad loans. The stabilityPool also collects interest from the loans, this is done through the Collector contract.
+The StabilityPool, as the name implies, guards the system stability by liquidating bad loans. The stabilityPool also collects interest from the loans, this is done through the Collector contract.
 
 For these earnings, the pool regularly creates payout contracts where stakers can claim their part of the stability pool earnings. Technically, this means that the stability pool holds a minting NFT to create these receipts and payout contracts. The stabilityPool needs a tokenSidecar to carry ParityUSD tokens besides its own minting NFT.
 
 2/7 loanFunctions are for the interacting with the stabilitypool: `liquidate` & `payInterest`.
 
 ### Redeemer
-5th is the redeemer contract, which processes redemptions against target loans. To create individual redemptions, the Redeemer needs its own Minting NFT. Redemption contracts are relatively complex as there us three parts to them:
+5th is the redeemer contract, which processes redemptions against target loans. To create individual redemptions, the Redeemer needs its own Minting NFT. Redemption contracts are relatively complex as there are three parts to them:
 
 1. The target loan, this part can be changed so is kept in a mutable NFT. 
 2. The ParityUSD to redeem against BCH, this is kept in a dedicated tokensidecar.
@@ -114,7 +114,7 @@ Because of this, an individual redemption exist out of 3 outputs.
 
 ## Single Function Contracts
 
-In the ParityUSD design most contracts only have a single contract function, with the exceptions of `Parity.cash`, `PriceContract.cash`, `Redemption.cash` and `Collector.cash`. So instead of 1 big loan contract with 8 functions, each of the loan functions is a separate single-function helper contract. The ParityUSD contract system works by composing single function contract who authenthicate/require each other's presence in a transaction to enforce the full contract system's logic.
+In the ParityUSD design most contracts only have a single contract function, with the exceptions of `Parity.cash`, `PriceContract.cash`, `Redemption.cash` and `Collector.cash`. So instead of 1 big loan contract with 8 functions, each of the loan functions is a separate single-function helper contract. The ParityUSD contract system works by composing single function contract who authenticate/require each other's presence in a transaction to enforce the full contract system's logic.
 
 This is large part of the reason why ParityUSD has 26 contracts in total whereas the number of sub-systems are only the 6 outlined above. This is because there are a bunch of helper-contracts in the system which we'll go over in the next section.
 
@@ -177,7 +177,7 @@ export enum PoolFunction {
 ```
 
 ### Sidecar outputs holding tokens
-Secondly, each UTXO on BCH must hold some Bitcoin Cash (atleast the dust amount) and can optionally hold 1 tokencategory.
+Secondly, each UTXO on BCH must hold some Bitcoin Cash (at least the dust amount) and can optionally hold 1 tokencategory.
 For this single tokencategory the contract can hold fungible tokens, nft's or both.
 So for contracts which already have a TokenId by which to hold another token, they simply need a secondary UTXO attached, with a simple contract code so it is always required to be attached as a sidecar output.
 
@@ -204,7 +204,7 @@ Epoch 0 contains periods 0-9, Epoch 1 contains period 10-19, etc.
 
 ### The Staking and Unstaking Mechanism
 
-Stakers can add liquidity to the stability pool by staking ParityUSD and earn interest from the loans. When the do so they receive a receipt which is post-dated to the start of the next epoch. Stakers can also remove liquidity from the stability pool by withdrawing their ParityUSD. When they do so they must return the receipt.
+Stakers can add liquidity to the stability pool by staking ParityUSD and earn interest from the loans. When they do so they receive a receipt which is post-dated to the start of the next epoch. Stakers can also remove liquidity from the stability pool by withdrawing their ParityUSD. When they do so they must return the receipt.
 
 Staking operates on epoch boundaries. Staked funds accrue interest only for complete epochs that start after their creation. When users stake ParityUSD, they receive a receipt for the next epoch. For example, if a staker stakes ParityUSD during period 15 (epoch 1), they receive a receipt for epoch 2 and will start earning interest from epoch 2 onwards. 
 
@@ -239,9 +239,9 @@ Staker rewards are distributed at epoch boundaries (every 10th period) through t
    - Interest in BCH collected from loans, taken from the destroyed `Collector` contract (70% after protocol fees)
    - BCH earned from liquidating undercollateralized loans, via the `StabilityPool` UTXO
 
-2. **Claiming Process**: Stakers use their staking receipts to claim rewards from the `Payout` contract, which updates their receipt for the next epoch and calculates their proportional rewards. For exampe a staking receipt with period 20 can be used to claim rewards from the Payout contract created for epoch 2. The receipt will be updated to period 30 and can then be used to claim rewards from the Payout contract created for epoch 3. This process can be repeated until the receipt is updated to the current period for which no `Payout` contract exists yet.
+2. **Claiming Process**: Stakers use their staking receipts to claim rewards from the `Payout` contract, which updates their receipt for the next epoch and calculates their proportional rewards. For example a staking receipt with period 20 can be used to claim rewards from the Payout contract created for epoch 2. The receipt will be updated to period 30 and can then be used to claim rewards from the Payout contract created for epoch 3. This process can be repeated until the receipt is updated to the current period for which no `Payout` contract exists yet.
 
-3. **Reward Calculation**: Each staker's share is calculated in their claim transacation and is proportional to their staking amount relative to the total staked during that epoch. The Payout contract stores both `totalStakedEpoch` and `remainingStakedEpoch` to handle liquidations correctly. In the case of no liquidations the new user receipt has the same `amountStakedReceipt` token amount, in case of liquidations the receipt's new `amountStakedReceipt` token amount will be lower propertoional to the `remainingStakedEpoch` after processing the liquidations.
+3. **Reward Calculation**: Each staker's share is calculated in their claim transaction and is proportional to their staking amount relative to the total staked during that epoch. The Payout contract stores both `totalStakedEpoch` and `remainingStakedEpoch` to handle liquidations correctly. In the case of no liquidations the new user receipt has the same `amountStakedReceipt` token amount, in case of liquidations the receipt's new `amountStakedReceipt` token amount will be lower proportional to the `remainingStakedEpoch` after processing the liquidations.
 
 ### The Liquidation Mechanism
 
@@ -289,7 +289,7 @@ A partial redemption reduces the collateral and outstanding debt of the loan but
 
 ### Starting a Redemption
 
-A redemption is created by interacting with the Redeemer contract. A redemption consists of 3 UTXOs, the redemption UTXO itself and two sidecar utxos. The first sidecar UTXO is the stateSideCar which holds state in an immutable NFT, and the second sidecar is the tokeSidecaar which holds the ParityUSD tokens to use for the redemption. 
+A redemption is created by interacting with the Redeemer contract. A redemption consists of 3 UTXOs, the redemption UTXO itself and two sidecar utxos. The first sidecar UTXO is the stateSideCar which holds state in an immutable NFT, and the second sidecar is the tokenSidecar which holds the ParityUSD tokens to use for the redemption. 
 
 The price used for the conversion of PUSD to BCH is locked in during the start of the redemption and is 0.5% below the oracle price. The `redemptionPrice` together with the `redeemerPkh` gets stored in the immutable state of the stateSidecar. The `targetLoanTokenId` and `redemptionAmount` are stored in mutable state of the redemption UTXO.
 
@@ -309,9 +309,9 @@ We then require that only a mature loan (`0x02`) can be swapped in as the new ta
 
 The rules are enforced by the `swapOutRedemption` and `swapInRedemption` loan functions. Along with `startRedemption` and `redeem` the redemption rules constitute 4 of the 7 loan functions and therefore represent significant complexity within the contract system.
 
-The swapped in loan may not match the swapped out loan in value. If it is smaller the redemption will be partially fulfilled and the remainder will be refunded to the redeemer. If it is later the redemtion will be completely fulfilled and the loan with be partially redeemed. The original redemption amount is kept in the redemption token sidecar but the actual amount pending redemption after a target loan swap is stored in the mutable state (NFT commitment) of the redemption UTXO.
+The swapped in loan may not match the swapped out loan in value. If it is smaller the redemption will be partially fulfilled and the remainder will be refunded to the redeemer. If it is larger the redemption will be completely fulfilled and the loan with be partially redeemed. The original redemption amount is kept in the redemption token sidecar but the actual amount pending redemption after a target loan swap is stored in the mutable state (NFT commitment) of the redemption UTXO.
 
-Swapping of target loans should occur rarely and only when redemptions don't follow the intended process. The reasons for this could be malicious or accidental. We prioritize the protection of large loans against malicious actors over the correction of errrors in loan selection.
+Swapping of target loans should occur rarely and only when redemptions don't follow the intended process. The reasons for this could be malicious or accidental. We prioritize the protection of large loans against malicious actors over the correction of errors in loan selection.
 
 Partially redeemed loans remain eligible for swapping in. This ensures full redemption before moving to the next lowest-rate loan.
 
@@ -352,11 +352,11 @@ This way the redeemer does not anymore have the option to let his redemption com
 
 ## The PriceContract Mechanism
 
-The PriceContract is coded to validate BCH/USD oracle priceMessages from the oracle run by General Protocols. Instead of using every 1-minute pricemesssage, the contract is coded to update its price state every 10 minutes (so every 10th message produced by the oracle). In addition to this general heartbeat, when the price changes more than 0.5% within this 10-minute interval, an additional price update is accepted to correct the contract's price state.
+The PriceContract is coded to validate BCH/USD oracle priceMessages from the oracle run by General Protocols. Instead of using every 1-minute pricemessage, the contract is coded to update its price state every 10 minutes (so every 10th message produced by the oracle). In addition to this general heartbeat, when the price changes more than 0.5% within this 10-minute interval, an additional price update is accepted to correct the contract's price state.
 
 ### PriceContract Migration
 
-The PriceContract has a function `migrateContract` which enables a a migration key to change the contract bytecode of the PriceContract. This means that whereas the other contracts are immutable, the PriceContract can be upgraded or changed over time.
+The PriceContract has a function `migrateContract` which enables a migration key to change the contract bytecode of the PriceContract. This means that whereas the other contracts are immutable, the PriceContract can be upgraded or changed over time.
 Specifically this is intended for should problems with the hardcoded oracle occur or should something have to change about the update frequency.
 
 Note that the `oracleMigrationKey` can also change the layout of the nftCommitment upon migration, specifically the price contract state can be extended:
@@ -429,17 +429,17 @@ Each loan can also appoint an interest manager which would be a 3rd party holdin
 
 In our contract system each loan has a unique `LoanTokenId` which is kept in the LoanSideCar. The minting NFT with the `LoanTokenId` is the LoanKey which can manage the loan and access its collateral. 
 
-One benefit of using a unique `LoanTokenId` as loan identifier is that it becomes possible to query the full loan history with ChainGraph with this `LoanTokenId`. By using a minting NFT as LoanKey it's also easy to enable users to create a backup LoanKey to keep in cold storage for example. Using TokenIds as unique identifier also has the benefit of not having to introduce a "serialNumber" system for both loanOwners and intrestManagers.
+One benefit of using a unique `LoanTokenId` as loan identifier is that it becomes possible to query the full loan history with ChainGraph with this `LoanTokenId`. By using a minting NFT as LoanKey it's also easy to enable users to create a backup LoanKey to keep in cold storage for example. Using TokenIds as unique identifier also has the benefit of not having to introduce a "serialNumber" system for both loanOwners and interestManagers.
 
 ## Minimum Loan, Stake & Redemption Sizes
 
-The ParityUSD contract system strictly enforces minimum sizes for loans, staking and redemptions, all set to a minumum size of 100.00 PUSD.
+The ParityUSD contract system strictly enforces minimum sizes for loans, staking and redemptions, all set to a minimum size of 100.00 PUSD.
 
-A minimum on loan size is required so the redemption mechanism cannot be griefed and so there cannot be huge amount of small "spam" loans created as a DOS attempt to cause UTXO congestion for normal users or in attempt to complicate keeping overview for interest payments or liquidations. The minimum loan size of course is also enforce during `manageLoan` where part of the loan debt is repaid, additionaly the size of the remaining loan debt after repayment should also be at least 100 PUSD.
+A minimum on loan size is required so the redemption mechanism cannot be griefed and so there cannot be huge amount of small "spam" loans created as a DOS attempt to cause UTXO congestion for normal users or in attempt to complicate keeping overview for interest payments or liquidations. The minimum loan size of course is also enforced during `manageLoan` where part of the loan debt is repaid, additionally the size of the remaining loan debt after repayment should also be at least 100 PUSD.
 
-The only scenario where the debt of a loan can go below the minimum of 100 PUSD is when the loan has a redemption complete which redeems just short of the full loan debt. Loans below 100 PUSD can be redeemed regardless of their interest-rate because they are not elligible for the "swap redemption" mechanism.
+The only scenario where the debt of a loan can go below the minimum of 100 PUSD is when the loan has a redemption complete which redeems just short of the full loan debt. Loans below 100 PUSD can be redeemed regardless of their interest-rate because they are not eligible for the "swap redemption" mechanism.
 
-For similar reasons to the loans, the minimum size for staking and redemptions is also set at 100 PUSD to protect against attemted malicious behavior. Also the minimum withdrawal size for the StabilityPool is set to 100 PUSD and the remaining amount staked should be at least 100 PUSD.
+For similar reasons to the loans, the minimum size for staking and redemptions is also set at 100 PUSD to protect against attempted malicious behavior. Also the minimum withdrawal size for the StabilityPool is set to 100 PUSD and the remaining amount staked should be at least 100 PUSD.
 
 ## Contract Setup Parameters
 
@@ -461,11 +461,11 @@ The number of UTXOs created during contract setup is important for enabling para
 
 ## Parallelism
 
-Bitcoin Cash transactions can be validated in parallel because of local state, however each unconfirmed transaction chain still happens in sequence. This can become problematic when the same UTXO is being spent roughly simulaneously by different users. For ParityUSD to handle a very large number of users, we need to think about the probelem of UTXO congestion, to avoid so called 'race-conditions'.
+Bitcoin Cash transactions can be validated in parallel because of local state, however each unconfirmed transaction chain still happens in sequence. This can become problematic when the same UTXO is being spent roughly simultaneously by different users. For ParityUSD to handle a very large number of users, we need to think about the problem of UTXO congestion, to avoid so called 'race-conditions'.
 
-The specific number of UTXOs for each of these is decided during the parity-setup, so cannot be changed anymore after the initial contract deployment. There is no dynamic thread-spwning in the contract design.
+The specific number of UTXOs for each of these is decided during the parity-setup, so cannot be changed anymore after the initial contract deployment. There is no dynamic thread-spawning in the contract design.
 
-The parts of the system whic can have multiple UTXOs for each contract are the following:
+The parts of the system which can have multiple UTXOs for each contract are the following:
 - The Borrowing Contract
 - The Price contract
 - The 8 Loan Function contracts
@@ -477,15 +477,15 @@ We have tested and plan to launch with the following setup:
 
 ```ts
 const config = {
-  numberDuplicateParityUtxos: 10, // statefull
-  numberDuplicatePriceContractUtxos: 5, // statefull
+  numberDuplicateParityUtxos: 10, // stateful
+  numberDuplicatePriceContractUtxos: 5, // stateful
   numberDuplicateLoanFunctionUtxos: 25, // stateless
   numberDuplicateRedeemerContractUtxos: 25, // stateless
   numberDuplicateLoanKeyFactoryUtxos: 5 // stateless
 }
 ```
 
-Note which of these contracts is state-less versus state-full. For statefull contracts, it may become more difficult to keep state synchronized accross UTXOs when having many contract UTXOs. 
+Note which of these contracts is state-less versus state-full. For stateful contracts, it may become more difficult to keep state synchronized across UTXOs when having many contract UTXOs. 
 
 However there are also parts where there is only a single contract UTXO
 - a single StabilityPool UTXO
