@@ -29,10 +29,12 @@
   + [Finalizing a Redemption](#finalizing-a-redemption)
   + [Free Option Problem](#free-option-problem)
   + [Solution for the Free Option Problem](#solution-for-the-free-option-problem)
+  + [Redemption Downtime](#redemption-downtime)
 + [The PriceContract Mechanism](#the-pricecontract-mechanism)
   + [PriceContract Migration](#pricecontract-migration)
 + [Timekeeping](#timekeeping)
 + [The Interest Management Mechanism](#the-interest-management-mechanism)
+  + [Interest Rate State](#interest-rate-state)
 + [The Use of Unique LoanTokenIds](#the-use-of-unique-loantokenids)
 + [Minimum Loan, Stake \& Redemption Sizes](#minimum-loan-stake--redemption-sizes)
 + [Contract Setup Parameters](#contract-setup-parameters)
@@ -80,15 +82,19 @@ Let's discuss each of the 6 parts of the Paryon system:
 
 ### Borrowing contract
 
-1st the Borrowing contract, this contract holds the ParyonUSD and is responsible for creating loans with a correct initial state which meet the minimum collateral requirements. Technically this means that the borrowing contract holds a minting NFT. The creation of a loan is of course dependent on the current market price but that is the role of the Price contracts. This contract holds the full ParyonUSD stablecoin supply initially. Note that there can be multiple instances of this contract to allow for parallelism.
+1st the Borrowing contract, this contract holds the ParyonUSD and is responsible for creating loans with a correct initial state which meet the minimum collateral requirements. The minimum collateral ratio is 110%, meaning a borrower must put up at least $1.10 worth of BCH for every $1.00 of PUSD borrowed. The creation of a loan is dependent on the current market price but that is the role of the Price contracts.
+
+To create new loan UTXOs, the borrowing contract holds a minting NFT. This contract also holds the full ParyonUSD stablecoin supply initially. Note that there can be multiple instances of this contract to allow for concurrency.
 
 ### Price contract
 
-2nd is the Paryon priceContracts, this contract is responsible for updating its own state with the latest price info and sharing this latest price info with other contracts in the paryon system. For this function to update its own state, the contract needs a mutable NFT. Note here also that there can be multiple instances of this contract to allow for parallelism.
+2nd is the Paryon priceContracts, this contract is responsible for updating its own state with the latest price info and sharing this latest price info with other contracts in the paryon system. For this function to update its own state, the contract needs a mutable NFT. Note here also that there can be multiple instances of this contract to allow for concurrency.
 
 ### Loan contracts
 
 3rd is the loan contracts itself. As discussed before this is a 'dumb top-level contract' where all contract logic is offloaded to the loanfunctions. The loan also always has a tokensidecar attached which keeps track of the loanOwner-tokenid (aka loanKey). The loan holds multiple pieces of state in the NFT commitment, because this state can be updated by the loanFunctions, loans keep a mutable NFT to store this state.
+
+The full loan lifecycle is managed by the 8 loan functions: a loan is created via `borrow`, then must `payInterest` each period. The loan owner can `manageLoan` to repay debt, add or remove collateral, and adjust interest rates via `changeInterest`. A loan ends either by full repayment through `manageLoan`, by liquidation through `liquidate` when the collateral ratio drops below 110%, or through the redemption process (`startRedemption`, `swapInRedemption`, `swapOutRedemption`, `redeem`).
 
 ### Stability Pool
 
@@ -245,7 +251,9 @@ Staker rewards are distributed at epoch boundaries (every 10th period) through t
 
 ### The Liquidation Mechanism
 
-The `StabilityPool` contract holds a minting NFT with state about the pool, and it keeps the ParyonUSD of stakers in the `StabilityPoolSidecar`. When the stabilityPool liquidates a loan (repays the ParyonUSD loan debt and claims the BCH collateral), the earned BCH is stored on the `StabilityPool` UTXO until it is paid out to stakers through the `Payout` contract at epoch boundaries.
+A loan becomes liquidatable when its collateral ratio drops below 110%, the same threshold enforced at borrowing. Liquidation is a full closure, the stability pool repays the loan's entire PUSD debt (which is burned) and claims all BCH collateral. The loan UTXO is destroyed, not recreated. Loans with pending redemptions cannot be liquidated.
+
+The `StabilityPool` contract holds a minting NFT with state about the pool, and it keeps the ParyonUSD of stakers in the `StabilityPoolSidecar`. The earned BCH from liquidations is stored on the `StabilityPool` UTXO until it is paid out to stakers through the `Payout` contract at epoch boundaries.
 
 The BCH yield paid to the stakers comes from the interest paid by loans to the `Collector` and from the BCH earned through liquidating loans. Only tokens that have been staked for a full epoch can be used in liquidations (part of `totalStakedEpoch`).
 
@@ -325,30 +333,22 @@ Because the price for redemptions locks in at the start but redemptions can be (
 
 When a redeemer starts a redemption strategically when a new period is about to start, the redeemer can cancel his own redemption with 'swapRedemption' by creating a new loan with a lower interest rate than the current target loan, making it the new lowest interest rate loan. This way the redeemer can choose whether to exercise his redemption at the locked in price, or to cancel his redemption. The redeemer in effect receives a 'free BCH price option' from the contract system.
 
-One possible solution is to only lock-in the redemption price at the end of the redemption process, however we choose to not sacrifice this desired aspect of the protocol. Instead, there is a need for special handling so 'swapRedemption' cannot be abused across period boundaries.
+Locking the price at the start of the redemption rather than at finalization is a deliberate design choice. Price certainty at the start is essential for redeemers to know exactly what they will receive, which makes the redemption mechanism practical to use and therefore effective at maintaining the peg. Without upfront price certainty, rational actors would be less willing to redeem, weakening the peg stability that redemptions provide.
+
+The free-option problem is a difficulty that emerges from the UTXO architecture: because there is no global state, the system must use an optimistic design with a time window for target loan swaps. This swap window, combined with the upfront price lock, creates the possibility of the free option across period boundaries.
 
 ### Solution for the Free Option Problem
 
 To solve for the free-option problem, we introduce two new rules to the redemption mechanism:
 
 1. Redemptions can only be swapped to loans from the same period (as indicated by `lastPeriodInterestPaid`)
-2. Redemptions started during the turnover window when a new period starts, can be cancelled (to protect loans from being redeemed against when they cannot fully rely on the redemption swapping mechanism)
+2. Redemptions that are still pending when a new period starts can be cancelled. The redeemer's ParyonUSD is returned in full.
 
-This way the redeemer does not anymore have the option to let his redemption complete at the current price or to cancel. This solution however introduces some downtime in the availability of the redemption mechanism. Redemptions started within the last `timeLockRedemption` (12 blocks, ~2 hours) of a period won't finalize before the period boundary and can be cancelled.
+This way the redeemer does not anymore have the option to let his redemption complete at the current price or to cancel.
 
-```solidity
-      // Check if current blockheight is in the period turnover window
-      // We restrict locktime to below 500 million as values above are unix timestamps instead of block heights
-      int newPeriod = currentPeriod + 1;
-      int blockHeightNewPeriod = startBlockHeight + newPeriod * periodLengthBlocks;
-      // Any redemption still running when a new period starts can be cancelled
-      bool isInNewPeriod = tx.locktime >= blockHeightNewPeriod && tx.locktime < 500_000_000;
+### Redemption Downtime
 
-      // If a new period has started, allow to cancel the redemption
-      if(isInNewPeriod){
-        redemptionAmountToFinalize = 0;
-      } else 
-```
+This solution introduces some downtime in the availability of the redemption mechanism. Redemptions started within the last `timeLockRedemption` (12 blocks, ~2 hours) of a period won't finalize before the period boundary and will be cancelled. With a period length of 144 blocks and a 12-block window, the redemption mechanism is unavailable for roughly 8% of the time.
 
 ## The PriceContract Mechanism
 
@@ -357,7 +357,8 @@ The PriceContract is coded to validate BCH/USD oracle priceMessages from the ora
 ### PriceContract Migration
 
 The PriceContract has a function `migrateContract` which enables a migration key to change the contract bytecode of the PriceContract. This means that whereas the other contracts are immutable, the PriceContract can be upgraded or changed over time.
-Specifically this is intended for when problems with the hardcoded oracle occur or when something has to change about the update frequency.
+
+The PriceContract is the only upgradable contract in the system, and it is also the only contract that already carries a trust assumption because it depends on an external oracle. Making it upgradable allows the system to migrate to a more advanced oracle in the future, such as a decentralized oracle, or to adjust the update frequency if needed. The migration key introduces an additional trust assumption, but it is scoped to a contract that inherently requires trust in external price data.
 
 Note that the `oracleMigrationKey` can also change the layout of the nftCommitment upon migration, specifically the price contract state can be extended:
 
@@ -404,6 +405,10 @@ This high frequency of `payInterest` transactions does not impact the stakers to
 
 ## The Interest Management Mechanism
 
+Interest rates in ParyonUSD are market-driven: each loan owner sets their own rate (or delegates this to an interest manager). Because the redemption mechanism targets the lowest interest rate loan first, borrowers face a direct tradeoff. A lower rate means cheaper borrowing but higher redemption risk, while a higher rate provides protection against redemption at a greater cost. This creates a natural market for interest rates where borrowers price in their own risk tolerance.
+
+### Interest Rate State
+
 Loans have 10 state items, 6 of which have to do with the loan's interest rate.
 
 ```solidity
@@ -421,9 +426,9 @@ Loans have 10 state items, 6 of which have to do with the loan's interest rate.
 */
 ```
 
-First note that the loan has a `currentInterestRate` which is the interest rate fixed for this `period`, and a `nextInterestRate` which is an updatable field for the next contract period. Each loan also tracks `lastPeriodInterestPaid`, in all normal circumstances this should simply be the current system period.
+First note that the loan has a `currentInterestRate` which is the interest rate fixed for this `period`, and a `nextInterestRate` which is an updatable field for the next contract period. The loan owner (or interest manager) can update `nextInterestRate` at any time via `changeInterest`, but this only takes effect when the loan pays interest and transitions to the next period, at which point `nextInterestRate` becomes the new `currentInterestRate`. Each loan also tracks `lastPeriodInterestPaid`, in all normal circumstances this should simply be the current system period.
 
-Each loan can also appoint an interest manager which would be a 3rd party holding an immutable nft with the `loanTokenId` and a commitment matching the `interestManager` field. The interest manager can be restricted in their possible actions by setting a `minRateManager` and `maxRateManager`. When the loanManager is set to `0x00` in the loan state, this means there is no interest manager appointed for the loan.
+Each loan can also appoint an interest manager which would be a 3rd party holding an immutable NFT with the `loanTokenId` and a commitment matching the `interestManager` field. The interest manager can be restricted in their possible actions by setting a `minRateManager` and `maxRateManager`. When the `interestManager` is set to `0x00` in the loan state, this means there is no interest manager appointed for the loan.
 
 ## The Use of Unique LoanTokenIds
 
@@ -457,7 +462,7 @@ When setting up the ParyonUSD contract system a few parameters need to be decide
 
 Further, there are some parameters which need to be decided upon setup but are not part of the `ParyonDeployment` configuration.
 
-The number of UTXOs created during contract setup is important for enabling parallelism, as we'll discuss in the next section.
+The number of UTXOs created during contract setup is important for enabling concurrency, as we'll discuss in the next section.
 
 ## Contract Concurrency
 
@@ -506,7 +511,7 @@ Examples of this are
 - `swapRedemption` and `finalizeRedemption` for the redemptions
 - `payInterest` for loans
 
-These transaction fees are then hard-coded values based on the transaction size like `1500` or `2500` sats. Additional fees can always be added by adding a BCH input and corresponding change output. It is not possible to make the fees dynamic from inside the contract, as the contract cannot know the state of the mempool or fee market and thus cannot adjust fee rates by itself.
+These hardcoded fees are the minimum fees paid by the contracts themselves from their own BCH balance, for example `1500` or `2500` sats based on transaction size. In the UTXO model, fees are simply the difference between inputs and outputs, so additional fees can always be added on top by including an extra BCH input and corresponding change output. It is not possible to make the contract-paid fees dynamic, as the contract cannot know the state of the mempool or fee market.
 
 The transactions where the operator always has to pay the fees are the `updatePrice` of the Price contract and `updatePeriodState` of the Borrowing contract, as these contracts don't hold any BCH to spend.
 
