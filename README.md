@@ -8,6 +8,7 @@ It also contains the contract documentation and schematics.
 - `contracts` - folder containing the CashScript `.cash` contract files
 - `contract_docs` - documentation for the ParyonUSD smart contract system
 - `contract_schematics` - schematics of the ParyonUSD smart contract system
+- `audit` - smart contract audit reports
 - `artifacts` - generated folder with the compiled artifacts output
 
 ## Contract Details
@@ -74,6 +75,24 @@ To see the compiled output sizes for the different contracts you can modify the 
 
 Similarly, you could change the artifact output file format to `json`.
 
+## Verifying Audit Hashes
+
+The contract source code has been audited across three passes. The audit report identifies snapshots by their git tree hashes, which are based on repo content and are stable across history rewrites.
+
+| Pass | Tree Hash | CashScript |
+|------|-----------|------------|
+| First | `873f00ce35477e775cbd66ba499179af1a47ae4a` | cashc v0.11.3 |
+| Second | `7446726ac529d1b2e261b16b778e79baf8bdc1f3` | cashc v0.12.0 |
+| Third | `e8b122a7faa14b8beda61563a2d17cf9073dc42f` | cashc v0.12.0 |
+
+You can list tree hashes for all commits in the repo with:
+
+```bash
+git log --format="%T %s"
+```
+
+Changes made after the third pass do not affect the compiled artifact bytecode but do change the repo tree hash. See [bytecode-verification.md](bytecode-verification.md) for how to verify this.
+
 ## Contract Tests
 
-There is a dedicated repo `paryon_testing_suite` for a Paryon Contract tests, the transaction building tests are in the `paryon_library` repo.
+There is a dedicated repo `paryon_testing_suite` for Paryon Contract tests, the transaction building tests are in the `paryon_library` repo.
