@@ -299,7 +299,7 @@ A partial redemption reduces the collateral and outstanding debt of the loan but
 
 A redemption is created by interacting with the Redeemer contract. A redemption consists of 3 UTXOs, the redemption UTXO itself and two sidecar utxos. The first sidecar UTXO is the stateSideCar which holds state in an immutable NFT, and the second sidecar is the tokenSidecar which holds the ParyonUSD tokens to use for the redemption. 
 
-The price used for the conversion of PUSD to BCH is locked in during the start of the redemption and is 0.5% below the oracle price. The `redemptionPrice` together with the `redeemerPkh` gets stored in the immutable state of the stateSidecar. The `targetLoanTokenId` and `redemptionAmount` are stored in mutable state of the redemption UTXO.
+The price used for the conversion of PUSD to BCH is locked in during the start of the redemption and is 0.5% above the oracle price (`redemptionPrice = oraclePrice * 1005 / 1000`). Because the redeemer's BCH payout is computed as `pusdAmount / redemptionPrice`, this acts as a redemption fee: the redeemer receives slightly less BCH per PUSD than the raw oracle rate. The fee protects loan owners from being redeemed against at exactly the oracle price and discourages arbitrage against oracle lag. The `redemptionPrice` together with the `redeemerPkh` gets stored in the immutable state of the stateSidecar. The `targetLoanTokenId` and `redemptionAmount` are stored in mutable state of the redemption UTXO.
 
 When a loan has a pending `amountBeingRedeemed`, the loan owner cannot fully repay his loan with `manageLoan`. The redemption takes priority but the loan owner is still able to pay his outstanding debt minus the pending redemption amount.
 

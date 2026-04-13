@@ -68,8 +68,11 @@ contract Redeemer(
       bytes4 oraclePriceBytes = tx.inputs[0].nftCommitment.slice(5,9);
       int oraclePrice = int(oraclePriceBytes);
 
-      // Calculate redemptionPrice which is 0.5% below oracle price
-      int redemptionPrice = oraclePrice * 995 / 1000;
+      // Calculate redemptionPrice which is 0.5% above oracle price.
+      // This acts as a redemption fee: the redeemer receives slightly less
+      // BCH per PUSD than the raw oracle rate, protecting loan owners and
+      // discouraging arbitrage against oracle lag.
+      int redemptionPrice = oraclePrice * 1005 / 1000;
       // Construct immutable state redemptionSidecar
       bytes24 redemptionSidecarState = redeemerPkh + bytes4(redemptionPrice);
 
