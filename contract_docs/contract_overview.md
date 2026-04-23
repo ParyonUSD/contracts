@@ -223,7 +223,7 @@ The `AddLiquidity` contract calculates the next epoch as value for the `epochRec
   int nextEpoch = currentEpoch + 1;
 ```
 
-The `WithdrawFromPool` contract which handles the unstaking only allows for full withdrawals of the amount staked on user staking receipts. The Withdrawal function still compensates stakers with BCH interest earnings already earned in the current epoch.
+The `WithdrawFromPool` contract which handles the unstaking only allows for full withdrawals of the amount staked on user staking receipts. The Withdrawal function still compensates stakers pro-rata with BCH earnings already accrued to the StabilityPool UTXO in the current epoch (interest forwarded from closed periods plus any liquidation earnings).
 
 If any liquidations happened during the current epoch, then pro-rata reduction of stake and payout of BCH liquidation earnings also take place at withdrawal time. Practically, this means that the amount which can be unstaked (withdrawn) from the pool is dependent on the share of pool funds spent in liquidations. A staking receipt of 1000 PUSD in the latest epoch can only withdraw 750 PUSD if the stability pool spent 25% of the staked funds in liquidations this epoch. The withdrawer also gets the corresponding BCH liquidation earnings paid out at withdrawal time.
 
@@ -245,7 +245,7 @@ Staker rewards are distributed at epoch boundaries (every 10th period) through t
    - Interest in BCH collected from loans, taken from the destroyed `Collector` contract (70% after protocol fees)
    - BCH earned from liquidating undercollateralized loans, via the `StabilityPool` UTXO
 
-2. **Claiming Process**: Stakers use their staking receipts to claim rewards from the `Payout` contract, which updates their receipt for the next epoch and calculates their proportional rewards. For example a staking receipt with period 20 can be used to claim rewards from the Payout contract created for epoch 2. The receipt will be updated to period 30 and can then be used to claim rewards from the Payout contract created for epoch 3. This process can be repeated until the receipt is updated to the current period for which no `Payout` contract exists yet.
+2. **Claiming Process**: Stakers use their staking receipts to claim rewards from the `Payout` contract, which updates the receipt to the next epoch and calculates their proportional rewards. The receipt's `epochReceipt` field stores the epoch number. For example a staking receipt for epoch 2 can be used to claim rewards from the Payout contract created for epoch 2. The receipt will be updated to epoch 3 and can then be used to claim rewards from the Payout contract created for epoch 3. This process can be repeated until the receipt is updated to the current epoch for which no `Payout` contract exists yet.
 
 3. **Reward Calculation**: Each staker's share is calculated in their claim transaction and is proportional to their staking amount relative to the total staked during that epoch. The Payout contract stores both `totalStakedEpoch` and `remainingStakedEpoch` to handle liquidations correctly. In the case of no liquidations the new user receipt has the same `amountStakedReceipt` token amount, in case of liquidations the receipt's new `amountStakedReceipt` token amount will be lower proportional to the `remainingStakedEpoch` after processing the liquidations.
 
@@ -393,7 +393,9 @@ The number of transactions per period and epoch are calculated as follows:
 
 >  Transactions per period = 1 + #loans + #borrowing-contracts
 
->  Transactions per epoch (10 periods) = 1 (NewPeriodPool epoch-boundary tx) + #stakers
+>  Additional transactions at each epoch boundary (every 10 periods) = #stakers
+
+The epoch-boundary `newPeriodPool` is the same per-period tx (it additionally creates the `Payout` contract, but not as a separate tx); each staker then makes one claim tx against that `Payout`.
 
 The following considerations must also be taken into account when setting the period length:
 - new staked funds only begin to earn at the start of the next epoch
@@ -444,7 +446,7 @@ A minimum on loan size is required so the redemption mechanism cannot be griefed
 
 The only scenario where the debt of a loan can go below the minimum of 100 PUSD is when the loan has a redemption complete which redeems just short of the full loan debt. Loans below 100 PUSD can be redeemed regardless of their interest-rate because they are not eligible for the "swap redemption" mechanism.
 
-For similar reasons to the loans, the minimum size for staking and redemptions is also set at 100 PUSD to protect against attempted malicious behavior. Also the minimum withdrawal size for the StabilityPool is set to 100 PUSD and the remaining amount staked should be at least 100 PUSD.
+For similar reasons to the loans, the minimum size for staking and redemptions is also set at 100 PUSD to protect against attempted malicious behavior. StabilityPool withdrawals are always full (the staking receipt is consumed and the full share of the remaining staked funds for that receipt is withdrawn), so no minimum-withdrawal or remaining-stake rule applies on the pool side.
 
 ## Contract Setup Parameters
 

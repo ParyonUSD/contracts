@@ -99,6 +99,38 @@ In Paryon there are two places where we track time (the system period, where eac
 For the stability pool, the stakers and the paryon server have reason to update this period state. There is also just one UTXO so it's easy to update this by making a transaction.
 For the Borrowing contract, there can be multiple UTXOs and they could even be behind in the state they are tracking. This is not a problem however as users have an incentive to update the state to the latest possible period upon interaction. Only the user loses when he borrows at an old period because he will have to make additional interest payments.
 
+### Locktime Enforcement
+
+Several period-advancement paths need to read the raw `nLocktime` value (for arithmetic, for writing into NFT state, or for branching), so they use `tx.locktime` rather than `tx.time`. This gives us the value-access functionality we need, but it does not carry the same built-in safety checks as `tx.time`, so those checks have to be applied explicitly. Two edges need to be handled:
+
+**Block height vs. Unix timestamp.** `nLocktime` values below `500_000_000` are interpreted as block heights, higher values as Unix timestamps. Paryon tracks time in blocks, so every use of `tx.locktime` in period arithmetic is paired with `require(tx.locktime < 500_000_000)` to ensure the value is a block height and not a timestamp.
+
+**Non-final sequence number.** BCH consensus only enforces `nLocktime` when at least one input has `nSequence != 0xFFFFFFFF`. If every input is "final" (`0xFFFFFFFF`), the transaction is mined regardless of the locktime value. A bare comparison against `tx.locktime` only checks the value written into the transaction, not whether consensus actually prevented the transaction from being mined before that block. To close this, each site pairs the `tx.locktime` arithmetic with:
+
+```solidity
+require(tx.time >= 0);
+```
+
+This compiles to `OP_CHECKLOCKTIMEVERIFY` with a constant value of `0`. The value check is trivially satisfied, but per BIP65 the opcode itself fails if the currently-evaluated input's `nSequence` is `0xFFFFFFFF`. That is exactly the non-final-sequence requirement we need, enforced by the opcode designed for it and bound to the right input (the one executing the script), rather than by a hand-rolled check against a specific input index.
+
+This is applied in three call sites:
+
+- `Borrowing.cash`: `updatePeriodState()`
+- `NewPeriodPool.cash`: `newPeriod()`
+- `redeem.cash`: `redeemOrCancel()`, inside the `isInNewPeriod` cancellation branch. The finalize branch is already consensus-bound via the existing `sequenceNumber == timelockRedemption` check, which pins input 3 to a specific non-final value.
+
+### Relative Timelock Enforcement
+
+Relative timelocks constrain how many blocks must pass between an input's UTXO being created and the transaction spending it. Paryon uses this in one place: the 12-block delay on redemption finalization (`redeem.cash`, finalize branch), which pins `tx.inputs[3].sequenceNumber == timelockRedemption`.
+
+Note that Paryon does not use `this.age` / `OP_CHECKSEQUENCEVERIFY`. The delay is enforced on input 3 (the redemption), not on the currently-evaluated input (input 2, the redeem contract), so CSV cannot be used and the check goes through raw `sequenceNumber` introspection instead. At that level there are two edges to handle explicitly:
+
+**Transaction version.** BCH consensus only interprets `sequenceNumber` as a relative timelock when `tx.version >= 2` (BIP68). Under version 1 the sequence field is just data and the 12-block delay would not be enforced by consensus — the script-level equality check would still pass, but the transaction could be mined immediately. `redeem.cash` therefore enforces `require(tx.version == 2)` alongside the sequence check.
+
+**Exact equality.** The finalize branch pins the sequence with `sequenceNumber == timelockRedemption` rather than `>= timelockRedemption`. The sequence field carries a "disable" flag bit (bit 31) alongside the timelock value; a `>=` comparison would let an attacker set that flag, turning BIP68 off while still passing the script check. Exact equality rejects any extra bits.
+
+**Value range.** BIP68 interprets only the low 16 bits of the sequence as a block count, so `timelockRedemption` must stay within `0..65535`. A higher value would cause consensus to enforce a different delay than the script specifies. The current value of 12 is well inside this range.
+
 ## Standardness rules
 
 - Covenants shouldn't be able to commit to payout to arbitrary lockscripts (as those can be non-standard)

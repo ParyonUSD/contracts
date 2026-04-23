@@ -157,6 +157,8 @@ contract Borrowing(
       int startingHeightCurrentPeriod = startBlockHeight + currentPeriodBorrowing * periodLengthBlocks;
       int startingHeightNewPeriod = startingHeightCurrentPeriod + periodLengthBlocks;
       require(tx.locktime >= startingHeightNewPeriod, "Locktime should be in new period");
+      // Require timelocks are enabled; see contract_safety.md "Locktime Enforcement"
+      require(tx.time >= 0);
 
       // construct new period state
       int newPeriodBorrowing = (tx.locktime - startBlockHeight) / periodLengthBlocks;

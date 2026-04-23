@@ -48,6 +48,8 @@ contract NewPeriodPool(
       int newPeriod = currentPeriodPool + 1;
       int blockHeightNewPeriod = startBlockHeight + newPeriod * periodLengthBlocks;
       require(tx.locktime >= blockHeightNewPeriod && tx.locktime < 500_000_000);
+      // Require timelocks are enabled; see contract_safety.md "Locktime Enforcement"
+      require(tx.time >= 0);
 
       // The StabilityPool itself enforces the same lockingBytecode & tokenCategory
       // Pool functions need to enforce the nftCommitment & value (and tokenAmount in sidecar)

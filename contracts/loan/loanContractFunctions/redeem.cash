@@ -11,6 +11,7 @@ pragma cashscript ^0.12.0;
 
 contract redeemLoan(
   bytes32 redemptionTokenId,
+  // Due to sequence-number encoding and BIP68 semantics, this value must be in the range 0..65535.
   int timelockRedemption,
   int startBlockHeight,
   int periodLengthBlocks
@@ -63,6 +64,8 @@ contract redeemLoan(
 
       // If the redemption is in a new period, cancel the redemption
       if(isInNewPeriod){
+        // Require timelocks are enabled; see contract_safety.md "Locktime Enforcement"
+        require(tx.time >= 0);
         // Cancel the redemption by setting effectiveRedemptionAmount to 0
         // In this case no collateral is redeemed from the loan and no debt is repaid
         effectiveRedemptionAmount = 0;
