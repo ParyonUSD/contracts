@@ -438,6 +438,14 @@ In our contract system each loan has a unique `LoanTokenId` which is kept in the
 
 One benefit of using a unique `LoanTokenId` as loan identifier is that it becomes possible to query the full loan history with ChainGraph with this `LoanTokenId`. By using a minting NFT as LoanKey it's also easy to enable users to create a backup LoanKey to keep in cold storage for example. Using TokenIds as unique identifier also has the benefit of not having to introduce a "serialNumber" system for both loanOwners and interestManagers.
 
+### Loan Ownership
+
+The `loanTokenId` appears on three distinct NFTs: the loan sidecar (immutable), the loan key (minting), and any appointed interest manager delegation (immutable). Only minting NFTs grant ownership; the sidecar and manager delegation NFTs cannot access collateral. The loan UTXO itself is distinct from these; it carries the `paryonTokenId` as a mutable NFT.
+
+The reason the loan key is a minting NFT is to support the interest-manager delegation described above: the owner mints an immutable copy of the same `loanTokenId` with a commitment identifying the manager, and that delegated NFT can adjust the interest rate within owner-set bounds without ever touching the collateral. The same mechanism is what lets users mint additional loan keys for themselves, beyond the cold-storage backup case noted above this could be a second wallet or authorized access from another contract.
+
+Because loan keys can be duplicated, holding one proves authority but not *sole* authority. This makes trading or accepting loan keys from others risky: a prior holder may have retained a minting copy that still drains the collateral. Before trusting a received loan key as an exclusive ownership claim, verify on-chain that no other unspent minting NFTs of the same category exist.
+
 ## Minimum Loan, Stake & Redemption Sizes
 
 The ParyonUSD contract system strictly enforces minimum sizes for loans, staking and redemptions, all set to a minimum size of 100.00 PUSD.
