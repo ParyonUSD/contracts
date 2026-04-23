@@ -45,6 +45,9 @@ contract PriceContract(
     // Validate oracle signature against the oracle public key
     require(checkDataSig(oracleSignature, oracleMessage, oraclePublicKey));
 
+    // Length check enforces the oracle price-message format for price updates
+    require(oracleMessage.length == 16, "Oracle message must be exactly 16 bytes");
+
     // Extract oracle message's content sequence and price
     bytes oraclePriceInfo = oracleMessage.split(8)[1];
     bytes4 oracleSeqBytes, bytes oraclePriceBytes = oraclePriceInfo.split(4);
@@ -60,6 +63,8 @@ contract PriceContract(
     // Calculate price deviation between old contract price and new oracle price
     int oldContractPrice = int(contractPriceBytes);
     int oraclePrice = int(oraclePriceBytes);
+    // Defense in depth against sign-bit / zero prices propagating to Borrowing, payInterest, liquidate
+    require(oraclePrice > 0);
     int priceDiff = abs(oldContractPrice - oraclePrice);
     // Deviation threshold for oracle price difference is 0.5%
     bool exceedsDeviationThreshold = priceDiff >= (oldContractPrice / 200);
