@@ -75,9 +75,9 @@ To see the compiled output sizes for the different contracts you can modify the 
 
 Similarly, you could change the artifact output file format to `json`.
 
-## Verifying Audit Hashes
+## Audit Snapshots
 
-The contract source code has been audited across three passes. The audit report identifies snapshots by their git tree hashes, which are based on repo content and are stable across history rewrites.
+The contract source has been through two external audits. The first was delivered across three passes and its report is published in this repo; a second is still in progress. The table below lists the tree hashes identifying each snapshot of the finalised audit. Tree hashes are derived from repo content and are stable across history rewrites.
 
 | Pass | Tree Hash | CashScript |
 |------|-----------|------------|
@@ -91,7 +91,7 @@ You can list tree hashes for all commits in the repo with:
 git log --format="%T %s"
 ```
 
-Changes made after the third pass do not affect the compiled artifact bytecode but do change the repo tree hash. See [bytecode-verification.md](bytecode-verification.md) for how to verify this.
+The current repo state includes additional hardening identified by a follow-up AI-assisted review beyond the third-pass snapshot. Six contracts' compiled bytecode has changed; the remaining 20 are bytecode-identical. See [post-audit-changes.md](post-audit-changes.md) for what changed and why, and [bytecode-verification.md](bytecode-verification.md) for how to verify the unchanged 20 against the snapshot.
 
 ## Contract Tests
 

@@ -1,6 +1,6 @@
 # Bytecode Verification
 
-This document explains how to verify that the compiled artifact bytecode has not changed since the audited third pass snapshot.
+This document explains how to verify that the compiled artifact bytecode matches the audited third pass snapshot for contracts whose source has not been modified post-audit. For the six contracts whose bytecode has intentionally changed since the audit, and why, see [post-audit-changes.md](post-audit-changes.md).
 
 ## Finding the audit commit
 
@@ -24,27 +24,22 @@ diff <(git ls-tree --name-only <commit>:artifacts/ | xargs -I{} git show <commit
 
 > **Note:** To verify using `debug.bytecode` (hex) instead, replace `"^  bytecode:"` with `"^    bytecode:"` in the command above (4 spaces instead of 2).
 
-> **Expected post-audit mismatch:** this diff is expected to report exactly one mismatch on the `Redeemer` bytecode line, corresponding to the constant adjustment described in [Redeemer redemption-price constant](#redeemer-redemption-price-constant). That single mismatch confirms the change is present; any additional contract bytecode differences indicate unexpected drift and must be investigated. For a command that exits green, see [Green-light verification](#green-light-verification-post-fix).
+> **Expected post-audit mismatches:** this diff is expected to report exactly six mismatches, on `Redeemer`, `PriceContract`, `Borrowing`, `NewPeriodPool`, `redeem` and `manage`. Each corresponds to an intentional post-audit source change described in [post-audit-changes.md](post-audit-changes.md). Any additional bytecode differences indicate unexpected drift and must be investigated.
 
-## Note on artifact rename
+Note that `artifacts/Parity.ts` was renamed to `artifacts/Borrowing.ts` post-audit. The sorted diff above compares bytecode lines independent of filenames, so the rename itself does not produce a spurious mismatch; however Borrowing's bytecode has also changed beyond the rename.
 
-After the audit, `artifacts/Parity.ts` was renamed to `artifacts/Borrowing.ts`. The bytecode is identical but a filename-based comparison would fail. The sorted diff above avoids this by comparing bytecode lines independent of filenames.
+## Green-light verification (post-change)
 
-## What changed after the audit
-
-Changes after the third pass are limited to documentation, comments, renaming, packaging, and one constant adjustment in `Redeemer.cash` (see below). Comment changes affect the `source` and `sourceMap` fields in artifacts but not `bytecode`. The rename changed `contractName` in `Borrowing.ts` but not its `bytecode`.
-
-### Redeemer redemption-price constant
-
-The `redemptionPrice` constant in `Redeemer.cash` was adjusted from `oraclePrice * 995 / 1000` to `oraclePrice * 1005 / 1000` so the computed price matches the intended 0.5% redemption fee direction.
-
-The Redeemer bytecode changes at all only because the 0.5% factor is a hardcoded literal inside the contract rather than a constructor parameter. Constants passed via constructor parameters live outside the compiled bytecode and would not affect this check.
-
-### Green-light verification (post-fix)
-
-Because the audit-diff above is expected to fail on the Redeemer line, use this variant that excludes Redeemer and should exit 0:
+Because the audit diff above is expected to fail on the six contracts listed, use this variant which excludes them and should exit 0, confirming the remaining 20 contracts still match their audited bytecode:
 
 ```bash
-COMMIT=9a0b98ee96d148293eeeba6e684e183958041925
-diff <(git ls-tree --name-only $COMMIT:artifacts/ | grep -v '^Redeemer\.ts$' | xargs -I{} git show $COMMIT:artifacts/{} | grep "^  bytecode:" | sort) <(ls artifacts/*.ts | grep -v Redeemer | xargs grep -h "^  bytecode:" | sort) && echo "Non-Redeemer bytecodes match"
+# Resolve the audit commit from its tree hash (see "Finding the audit commit" above)
+COMMIT=$(git log --format='%H %T' | awk '$2=="e8b122a7faa14b8beda61563a2d17cf9073dc42f" {print $1; exit}')
+EXCLUDE='(^|/)(Redeemer|PriceContract|Borrowing|Parity|NewPeriodPool|redeem|manage)\.ts$'
+diff \
+  <(git ls-tree --name-only $COMMIT:artifacts/ | grep -Ev "$EXCLUDE" | xargs -I{} git show $COMMIT:artifacts/{} | grep "^  bytecode:" | sort) \
+  <(ls artifacts/*.ts | grep -Ev "$EXCLUDE" | xargs grep -h "^  bytecode:" | sort) \
+  && echo "20 unchanged contract bytecodes match audit"
 ```
+
+`Parity.ts` is listed alongside `Borrowing.ts` in the exclusion regex because that is the artifact name on the audit-commit side of the diff.
