@@ -63,6 +63,8 @@ contract liquidateLoan(
       require(borrowedAmount > maxBorrow, "Invalid liquidation, collateral ratio not below liquidation threshold");
 
       // StabilityPool LiquidateLoan function enforces the repayment amount is burned at outputIndex 5
+      // It also locks down all other tx outputs (plus the output count), so no mutable loan NFT can be re-created
+      // This prevents any authority leak for the paryonTokenId mutable NFT capability
 
       // Recreate functionContract at output 1
       require(tx.outputs[1].lockingBytecode == tx.inputs[3].lockingBytecode);

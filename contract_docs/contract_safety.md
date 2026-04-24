@@ -86,6 +86,14 @@ There's 4 Mint-Authorities in ParyonUSD
 - loanKey Factory
 - Stability Pool (together with the created Payout contract!)
 
+## Protecting Delegated Authority on Dumb Top-Level Contracts
+
+`Loan.cash` and `StabilityPool.cash` are dumb top-level contracts that delegate all logic to their attached function contracts (8 and 4 respectively). As a consequence, each individual function is responsible for preventing leaks of the top-level contract's mutable-NFT capability. For loans, this is the `paryonTokenId + 0x01` capability with commitment prefix `0x01`. A single missing output check in any one function leaks that authority across the whole system.
+
+For functions that are not exactly self-replicating (`liquidate`, `redeem`, the redemption-advancing paths), authority protection cannot rely on the top-level contract recreating itself because on those branches it doesn't. These paths must lock down every output plus the output count.
+
+Where a loan function enforces only a subset of outputs and trusts another contract in the same transaction to lock down the rest (for example `liquidate.cash` delegating to the StabilityPool's `LiquidateLoan`), that delegation is part of the security contract and should be followed through when auditing.
+
 ## Keeping Track of Time
 
 Keeping track of time in a covenant is difficult because there is no global information available on blockheight.

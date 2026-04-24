@@ -37,5 +37,7 @@ contract Loan(
       require(tx.inputs[nftFunctionInputIndex].tokenCategory == paryonTokenId);
       bytes commitmentNftFunction = tx.inputs[nftFunctionInputIndex].nftCommitment;
       require(commitmentNftFunction.length == 1);
+      // The mutable capability of the loan NFT must be protected by the loan contract functions.
+      // Because loans are not always self-replicating, no lockingBytecode is pinned on the function NFT input.
     }
 }

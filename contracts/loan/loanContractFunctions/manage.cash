@@ -20,7 +20,7 @@ contract manageLoan(
       //
       // Inputs: 00-pricecontract, 01-loan, 02-loanTokenSidecar, 03-manageLoan, 04-loanKey, 05-userBch, ?06-repayTokens
       // Outputs: 00-pricecontract, 01-loan, 02-loanTokenSidecar, 03-manageLoan, 04-loanKey, ?05-opreturn, ??-changeTokens, ??-changeBch
-      //      or: 00-pricecontract, 01-manageLoan, 02-opreturn, ??-changeTokens, ??-changeBch
+      //      or: 00-pricecontract, 01-manageLoan, 02-opreturn, 03-opreturn, ??-changeTokens, ??-changeBch
 
     function manage(
       int repayAmount,
@@ -136,6 +136,13 @@ contract manageLoan(
         require(tx.outputs[opreturnOutputIndex].tokenCategory == paryonTokenId);
         require(tx.outputs[opreturnOutputIndex].tokenAmount == repayAmount);
         require(tx.outputs[opreturnOutputIndex].lockingBytecode == new LockingBytecodeNullData([0x]));
+      }
+
+      if(closeLoan){
+        // Burn mutable Loan NFT by sending to unspendable opreturn output at index 3
+        // This guarantees the mutable NFT can not occur on any user controlled output
+        require(tx.outputs[3].tokenCategory == paryonTokenId + 0x01);
+        require(tx.outputs[3].lockingBytecode == new LockingBytecodeNullData([0x]));
       }
     }
 }
