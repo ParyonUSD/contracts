@@ -8,7 +8,7 @@ export default {
     },
   ],
   bytecode: 'OP_INPUTINDEX OP_3 OP_NUMEQUALVERIFY OP_2 OP_OUTPOINTTXHASH OP_3 OP_OUTPOINTTXHASH OP_EQUALVERIFY OP_2 OP_OUTPOINTINDEX OP_3 OP_OUTPOINTINDEX OP_1SUB OP_NUMEQUAL',
-  source: 'pragma cashscript ^0.12.0;\r\n\r\n// LoanKeyOriginProof, sidecar contract which holds the proof that the loanKey was created by the LoanKeyFactory.\r\n\r\n/*  --- Immutable NFT ---\r\n    no state (0x)\r\n*/\r\n\r\ncontract LoanKeyOriginProof() {\r\n    // function attach\r\n    // Ties together the LoanKeyOriginProof with the LoanKeyOriginEnforcer\r\n    //\r\n    // Inputs: 00-borrowing, 01-pricecontract, 02-LoanKeyOriginEnforcer, 03-LoanKeyOriginProof, 04-BchCollateral\r\n\r\n  function attach() {\r\n    // Enforce LoanKeyOriginProof at inputIndex 3\r\n    require(this.activeInputIndex == 3);\r\n\r\n    // Authenticate inputIndex 2 to be the LoanKeyOriginEnforcer\r\n    require(tx.inputs[2].outpointTransactionHash == tx.inputs[3].outpointTransactionHash);\r\n    require(tx.inputs[2].outpointIndex == tx.inputs[3].outpointIndex - 1);\r\n  }\r\n}',
+  source: 'pragma cashscript ^0.12.0;\n\n// LoanKeyOriginProof, sidecar contract which holds the proof that the loanKey was created by the LoanKeyFactory.\n\n/*  --- Immutable NFT ---\n    no state (0x)\n*/\n\ncontract LoanKeyOriginProof() {\n    // function attach\n    // Ties together the LoanKeyOriginProof with the LoanKeyOriginEnforcer\n    //\n    // Inputs: 00-borrowing, 01-pricecontract, 02-LoanKeyOriginEnforcer, 03-LoanKeyOriginProof, 04-BchCollateral\n\n  function attach() {\n    // Enforce LoanKeyOriginProof at inputIndex 3\n    require(this.activeInputIndex == 3);\n\n    // Authenticate inputIndex 2 to be the LoanKeyOriginEnforcer\n    require(tx.inputs[2].outpointTransactionHash == tx.inputs[3].outpointTransactionHash);\n    require(tx.inputs[2].outpointIndex == tx.inputs[3].outpointIndex - 1);\n  }\n}',
   debug: {
     bytecode: 'c0539d52c853c88852c953c98c9c',
     sourceMap: '17:12:17:33;:37::38;:4::40:1;20:22:20:23:0;:12::48:1;:62::63:0;:52::88:1;:4::90;21:22:21:23:0;:12::38:1;:52::53:0;:42::68:1;:::72;:4::74',
@@ -32,5 +32,5 @@ export default {
     name: 'cashc',
     version: '0.12.0',
   },
-  updatedAt: '2026-04-01T14:01:31.776Z',
+  updatedAt: '2026-04-24T08:33:23.042Z',
 } as const;
