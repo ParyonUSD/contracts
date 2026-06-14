@@ -23,7 +23,7 @@ export const compile = (directory: string): void => {
     const outputPath = path.join(artifactsDir, outputFileName);
 
     // Build the CLI command
-    const command = `cashc "${contractFile}" -o "${outputPath}" --format ts`;
+    const command = `cashc "${contractFile}" -o "${outputPath}" --format ts -S -L`;
 
     try {
       // Execute the CLI command

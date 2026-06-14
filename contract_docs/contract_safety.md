@@ -127,13 +127,17 @@ This is applied in three call sites:
 - `NewPeriodPool.cash`: `newPeriod()`
 - `redeem.cash`: `redeemOrCancel()`, inside the `isInNewPeriod` cancellation branch. The finalize branch is already consensus-bound via the existing `sequenceNumber == timelockRedemption` check, which pins input 3 to a specific non-final value.
 
+**Compiler locktime guard (cashc `-L`).** The hand-written `require(tx.time >= 0)` guards above are the real source of this enforcement. Since v0.13 the cashc compiler can also add the guard automatically (the `enforceLocktimeGuard` option, on by default): wherever `tx.locktime` is used without a `require(tx.time >= ...)` (or `require(this.age >= ...)`) in scope, it injects a `require(tx.time >= tx.locktime)` check.
+
+At two of the three sites (`Borrowing.cash` and `NewPeriodPool.cash`) the compiler sees our manual guard in scope and so injects nothing. At `redeem.cash` the guard sits inside the `if(isInNewPeriod)` branch while `tx.locktime` is read before the branch, so the compiler's static analysis cannot tell we are already safe and would inject a redundant guard, changing the bytecode. To keep the v0.13 output byte-identical to the audited v0.12 artifacts, the option is therefore opted out of across all contracts via the `-L` / `--skip-enforce-locktime-guard` flag.
+
 ### Relative Timelock Enforcement
 
 Relative timelocks constrain how many blocks must pass between an input's UTXO being created and the transaction spending it. Paryon uses this in one place: the 12-block delay on redemption finalization (`redeem.cash`, finalize branch), which pins `tx.inputs[3].sequenceNumber == timelockRedemption`.
 
 Note that Paryon does not use `this.age` / `OP_CHECKSEQUENCEVERIFY`. The delay is enforced on input 3 (the redemption), not on the currently-evaluated input (input 2, the redeem contract), so CSV cannot be used and the check goes through raw `sequenceNumber` introspection instead. At that level there are two edges to handle explicitly:
 
-**Transaction version.** BCH consensus only interprets `sequenceNumber` as a relative timelock when `tx.version >= 2` (BIP68). Under version 1 the sequence field is just data and the 12-block delay would not be enforced by consensus — the script-level equality check would still pass, but the transaction could be mined immediately. `redeem.cash` therefore enforces `require(tx.version == 2)` alongside the sequence check.
+**Transaction version.** BCH consensus only interprets `sequenceNumber` as a relative timelock when `tx.version >= 2` (BIP68). Under version 1 the sequence field is just data and the 12-block delay would not be enforced by consensus: the script-level equality check would still pass, but the transaction could be mined immediately. `redeem.cash` therefore enforces `require(tx.version == 2)` alongside the sequence check.
 
 **Exact equality.** The finalize branch pins the sequence with `sequenceNumber == timelockRedemption` rather than `>= timelockRedemption`. The sequence field carries a "disable" flag bit (bit 31) alongside the timelock value; a `>=` comparison would let an attacker set that flag, turning BIP68 off while still passing the script check. Exact equality rejects any extra bits.
 
@@ -162,16 +166,19 @@ The contract does this by not requiring the user to create a payout output at al
 
 ## Validate Function Arguments
 
-CashScript does not automatically enforce byte length types for function arguments, see the [CashScript docs on Function Arguments](https://cashscript.org/docs/language/contracts#function-arguments) for more info.
+The cashc compiler supports automatic enforcement of function parameter types (bounded bytes lengths and boolean values) by adding runtime checks. This is enabled by default but **disabled during compilation** of these contracts (via the `-S` / `--skip-enforce-function-parameter-types` flag) for backwards compatibility.
 
-This fact is noted in the relevant places directly next to the provided contract function arguments:
+Instead, the contracts manually validate function arguments where needed using explicit `require` checks on `.length`:
 
 ```solidity
     function borrow(
-      // Note: the bytes lengths of function arguments are not automatically enforced
+      // Note: function parameter type enforcement is disabled during compilation for backwards compatibility, so needs to be enforced in contract code
       bytes2 startingInterest,
       bytes5 interestManagerConfiguration
     ) {
+      ...
+      require(startingInterest.length == 2);
+      require(interestManagerConfiguration.length == 5);
 ```
 
 ## CashScript Gotchas

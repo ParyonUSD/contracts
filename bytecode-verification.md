@@ -28,6 +28,12 @@ diff <(git ls-tree --name-only <commit>:artifacts/ | xargs -I{} git show <commit
 
 Note that `artifacts/Parity.ts` was renamed to `artifacts/Borrowing.ts` post-audit. The sorted diff above compares bytecode lines independent of filenames, so the rename itself does not produce a spurious mismatch; however Borrowing's bytecode has also changed beyond the rename.
 
+## CashScript compiler upgrade (v0.12 → v0.13)
+
+The audited passes were compiled with cashc v0.12.0. The source has since been updated to the v0.13 language version, adopting new syntax such as type narrowing and the revised unsafe-cast handling, and is now compiled with cashc v0.13.0. These are source-level changes that compile to the same opcodes, so they do not change the `bytecode`.
+
+v0.13 also turns on two compiler enforcement features by default: function-parameter-type checks (`enforceFunctionParameterTypes`) and an automatic locktime guard (`enforceLocktimeGuard`). Both would otherwise inject extra opcodes. These contracts already perform both checks by hand (see `contract_docs/contract_safety.md`: "Validate Function Arguments" and "Locktime Enforcement"), so both options are explicitly opted out of via the `-S` (`--skip-enforce-function-parameter-types`) and `-L` (`--skip-enforce-locktime-guard`) flags in `compile.ts`. The net result is that the toolchain upgrade itself changes no bytecode: the 20 contracts untouched since the audit still match their audited v0.12 artifacts, and the six intentional deltas remain exactly those described in [post-audit-changes.md](post-audit-changes.md).
+
 ## Green-light verification (post-change)
 
 Because the audit diff above is expected to fail on the six contracts listed, use this variant which excludes them and should exit 0, confirming the remaining 20 contracts still match their audited bytecode:
