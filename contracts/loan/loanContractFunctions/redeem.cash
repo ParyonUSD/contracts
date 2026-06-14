@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Redeem loan contract function
 // Is used by a redemption to finalize the redemption process, redeems ParyonUSD tokens for BCH collateral from loan
@@ -86,11 +86,11 @@ contract redeemLoan(
       int newLoanCollateral = tx.inputs[0].value - redeemedCollateral;
 
       // Parse loan state, used to construct new loan commitment
-      bytes loanState = tx.inputs[0].nftCommitment;
-      bytes7 firstPartLoanState, bytes remainingPartLoanState = loanState.split(7);
+      bytes27 loanState = unsafe_bytes27(tx.inputs[0].nftCommitment);
+      bytes7 firstPartLoanState, bytes20 remainingPartLoanState = loanState.split(7);
       byte identifier, bytes6 borrowedAmountBytes = firstPartLoanState.split(1);
       require(identifier == 0x01);
-      bytes6 amountBeingRedeemed, bytes lastPartLoanState = remainingPartLoanState.split(6);
+      bytes6 amountBeingRedeemed, bytes14 lastPartLoanState = remainingPartLoanState.split(6);
 
       // Construct loan state after redemption (update debt and amountBeingRedeemed)
       // the new state for amountBeingRedeemed is reduced by the pendingRedemptionAmount
@@ -98,7 +98,7 @@ contract redeemLoan(
       // the state for the new borrowedAmount is reduced by the effectiveRedemptionAmount
       // thus if the redemption is cancelled, the borrowedAmount remains unchanged
       int newBorrowAmount = int(borrowedAmountBytes) - effectiveRedemptionAmount;
-      bytes27 newLoanCommitment = 0x01 + bytes6(newBorrowAmount) + bytes6(newAmountBeingRedeemed) + bytes14(lastPartLoanState);
+      bytes27 newLoanCommitment = 0x01 + toPaddedBytes(newBorrowAmount, 6) + toPaddedBytes(newAmountBeingRedeemed, 6) + lastPartLoanState;
 
       // Recreate loan contract with new state and new collateral amount at output index 0
       require(tx.outputs[0].nftCommitment == newLoanCommitment);

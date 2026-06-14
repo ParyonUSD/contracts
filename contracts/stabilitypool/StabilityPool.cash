@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Contract for StabilityPool which holds the pool state and BCH earnings from liquidations
 // Always tied to a StabilityPoolSidecar and a poolContractFunction

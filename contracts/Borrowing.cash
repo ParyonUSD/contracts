@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Borrowing contract, lets users create PUSD loans by putting up BCH collateral
 // The borrower receives the borrowed PUSD and a loanKey NFT to manage the loan
@@ -28,7 +28,7 @@ contract Borrowing(
       // Outputs: 00-borrowing, 01-pricecontract, 02-loan, 03-loanTokenSidecar, 04-borrowingFeeOutput, 05-loanKey, 06-borrowedTokens, 07?-BchChange, 08?-frontendfee
 
     function borrow(
-      // Note: the bytes lengths of function arguments are not automatically enforced
+      // Note: function parameter type enforcement is disabled during compilation for backwards compatibility, so needs to be enforced in contract code
       bytes2 startingInterest,
       bytes5 interestManagerConfiguration
     ) {
@@ -75,12 +75,10 @@ contract Borrowing(
       require(interestManagerConfiguration.length == 5);
 
       // Read periodBorrowing from contract state
-      bytes borrowingCommitment = tx.inputs[0].nftCommitment;
-      // Semantic typecast so concatenation for loanCommitment can be typed as bytes27
-      bytes4 periodBorrowingBytes = bytes4(borrowingCommitment);
+      bytes4 periodBorrowingBytes = unsafe_bytes4(tx.inputs[0].nftCommitment);
 
       // Construct loanCommitment
-      bytes27 loanCommitment = 0x01 + bytes6(borrowedAmount) + bytes6(0) + 0x00 + periodBorrowingBytes + startingInterest + startingInterest + interestManagerConfiguration;
+      bytes27 loanCommitment = 0x01 + toPaddedBytes(borrowedAmount, 6) + toPaddedBytes(0, 6) + 0x00 + periodBorrowingBytes + startingInterest + startingInterest + interestManagerConfiguration;
 
       // Create loancontract output at outputIndex 2
       // Output holds the BCH collateral + a Borrowing mutable NFT storing the loan state
@@ -162,7 +160,7 @@ contract Borrowing(
 
       // construct new period state
       int newPeriodBorrowing = (tx.locktime - startBlockHeight) / periodLengthBlocks;
-      bytes4 newPeriodBorrowingBytes = bytes4(newPeriodBorrowing);
+      bytes4 newPeriodBorrowingBytes = toPaddedBytes(newPeriodBorrowing, 4);
 
       // Recreate contract at outputIndex0 exactly
       require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode, "Recreate contract at output0 - invalid lockingBytecode");

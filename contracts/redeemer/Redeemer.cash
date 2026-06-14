@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Redeemer contract, creates the individual redemptions for loans.
 
@@ -19,7 +19,7 @@ contract Redeemer(
 
     function createRedemption(
       int redeemAmountTokens,
-      // Note: the bytes length of function arguments are not automatically enforced
+      // Note: function parameter type enforcement is disabled during compilation for backwards compatibility, so needs to be enforced in contract code
       bytes20 redeemerPkh
     ){
       // Require Redeemer to be at inputIndex 4
@@ -53,9 +53,8 @@ contract Redeemer(
 
       // Construct new mutable state redemption
       bytes loanTokenId = tx.inputs[2].tokenCategory;
-      bytes6 redeemAmountTokensBytes = bytes6(redeemAmountTokens);
-      // Semantic typecast of 'loanTokenId' so the concatenated result is bytes38
-      bytes38 mutableRedemptionState = bytes32(loanTokenId) + redeemAmountTokensBytes;
+      bytes6 redeemAmountTokensBytes = toPaddedBytes(redeemAmountTokens, 6);
+      bytes38 mutableRedemptionState = unsafe_bytes32(loanTokenId) + redeemAmountTokensBytes;
 
       // Create redemption at output index 5
       // Redemption has 5000 sats to pay for its own swapRedemption if needed
@@ -74,7 +73,7 @@ contract Redeemer(
       // discouraging arbitrage against oracle lag.
       int redemptionPrice = oraclePrice * 1005 / 1000;
       // Construct immutable state redemptionSidecar
-      bytes24 redemptionSidecarState = redeemerPkh + bytes4(redemptionPrice);
+      bytes24 redemptionSidecarState = redeemerPkh + toPaddedBytes(redemptionPrice, 4);
 
       // Create redemption statesidecar at output index 6
       require(tx.outputs[6].value == 1000);

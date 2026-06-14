@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // LiquidateLoan pool contract function
 // Enables the StabilityPool to liquidate any undercollateralized loan by repaying the loan's debt from its staked supply

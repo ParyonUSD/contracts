@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // ChangeInterest loan contract function
 // Is used to update the next period interest rate of a loan
@@ -17,7 +17,7 @@ contract changeInterest(
       // Outputs: 00-loan, 01-loanTokenSidecar, 02-changeInterest, 03-loanKey-or-loanManagementToken, ?04-changeBch
 
     function changeInterest(
-      // Note: the bytes length of function arguments are not automatically enforced
+      // Note: function parameter type enforcement is disabled during compilation for backwards compatibility, so needs to be enforced in contract code
       bytes2 nextInterestRate
     ){
       // Require function to be at inputIndex 2
@@ -34,10 +34,10 @@ contract changeInterest(
       require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
 
       // Parse loan state
-      bytes loanState = tx.inputs[0].nftCommitment;
+      bytes27 loanState = unsafe_bytes27(tx.inputs[0].nftCommitment);
       byte identifier = loanState.split(1)[0];
       require(identifier == 0x01);
-      bytes interestManagerConfiguration = loanState.split(22)[1];
+      bytes5 interestManagerConfiguration = loanState.split(22)[1];
       byte interestManager, bytes minMaxRates = interestManagerConfiguration.split(1);
 
       // Read loanTokenId from tokensidecar at inputIndex1
@@ -62,7 +62,7 @@ contract changeInterest(
 
       // Update nextInterestRate
       bytes20 fixedPartLoanState = loanState.split(20)[0];
-      bytes27 newLoanCommitment = fixedPartLoanState + nextInterestRate + bytes5(interestManagerConfiguration);
+      bytes27 newLoanCommitment = fixedPartLoanState + nextInterestRate + interestManagerConfiguration;
 
       // Recreate loan contract with new state and at least same collateral
       require(tx.outputs[0].lockingBytecode == tx.inputs[0].lockingBytecode, "Recreate loan contract - invalid lockingBytecode");

@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // StartRedemption loan contract function
 // Is used by a redemption to start the redemption process, attempting to redeem ParyonUSD tokens for BCH collateral from loan
@@ -40,11 +40,11 @@ contract startRedemption(
       require(tx.inputs[4].tokenCategory == redeemerTokenId + 0x02);
 
       // Parse loan state
-      bytes loanCommitment = tx.inputs[1].nftCommitment;
-      bytes7 firstPartLoanState, bytes remainingPartLoanState = loanCommitment.split(7);
+      bytes27 loanCommitment = unsafe_bytes27(tx.inputs[1].nftCommitment);
+      bytes7 firstPartLoanState, bytes20 remainingPartLoanState = loanCommitment.split(7);
       byte identifier, bytes6 borrowedAmountBytes = firstPartLoanState.split(1);
       require(identifier == 0x01);
-      bytes6 amountBeingRedeemedBytes, bytes lastPartLoanState = remainingPartLoanState.split(6);
+      bytes6 amountBeingRedeemedBytes, bytes14 lastPartLoanState = remainingPartLoanState.split(6);
 
       // Calculate redeemableDebt available for new redemption
       int borrowedAmount = int(borrowedAmountBytes);
@@ -63,7 +63,7 @@ contract startRedemption(
       require(newAmountBeingRedeemed <= borrowedAmount);
 
       // Construct new loan state
-      bytes27 newLoanCommitment = firstPartLoanState + bytes6(newAmountBeingRedeemed) + bytes14(lastPartLoanState);
+      bytes27 newLoanCommitment = firstPartLoanState + toPaddedBytes(newAmountBeingRedeemed, 6) + lastPartLoanState;
 
       // Recreate loan contract at output index 1
       require(tx.outputs[1].nftCommitment == newLoanCommitment, "Invalid state loan contract - wrong nftCommitment");

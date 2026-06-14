@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // LoanKeyOriginProof, sidecar contract which holds the proof that the loanKey was created by the LoanKeyFactory.
 

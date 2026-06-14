@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Collector contract for stability pool
 // The Collector contract collects interest paid from loans and finally pays it forward to the StabilityPool

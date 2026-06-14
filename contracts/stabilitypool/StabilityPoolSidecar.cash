@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // StabilityPoolSidecar contract holding ParyonUSD tokens for the pool
 // Custom sidecar allowing for special outputIndex when called from liquidateLoan function

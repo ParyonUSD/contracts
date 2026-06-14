@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // NewPeriodPool pool contract function
 // Updates the StabilityPool to a new period and creates a new Collector contract
@@ -65,7 +65,7 @@ contract NewPeriodPool(
       require(tx.outputs[2].value == 1000);
 
       // Create Collector contract at outputIndex 3
-      bytes4 newPeriodBytes = bytes4(newPeriod);
+      bytes4 newPeriodBytes = toPaddedBytes(newPeriod, 4);
       require(tx.outputs[3].lockingBytecode == collectorLockingScript);
       require(tx.outputs[3].tokenCategory == stabilityPoolTokenId + 0x01);
       require(tx.outputs[3].nftCommitment == newPeriodBytes);
@@ -88,7 +88,7 @@ contract NewPeriodPool(
 
         // Update all state StabilityPool
         int newAmountStakedEpoch = tx.outputs[1].tokenAmount;
-        bytes newStateStabilityPool = newPeriodBytes + bytes6(newAmountStakedEpoch) + bytes(newAmountStakedEpoch);
+        bytes newStateStabilityPool = newPeriodBytes + toPaddedBytes(newAmountStakedEpoch, 6) + bytes(newAmountStakedEpoch);
         require(tx.outputs[0].nftCommitment == newStateStabilityPool);
 
         // Create Payout contract at outputIndex 5
@@ -108,9 +108,9 @@ contract NewPeriodPool(
         int epochPayout = currentPeriodPool / 10;
 
         // Encode variable length encoded remainingStakedEpochBytes as fixed bytes6 size
-        bytes6 remainingStakedEpochBytes6 = bytes6(int(remainingStakedEpochBytes));
+        bytes6 remainingStakedEpochBytes6 = toPaddedBytes(int(remainingStakedEpochBytes), 6);
         // Construct state for payout contract
-        bytes payoutContractState = bytes4(epochPayout) + totalStakedEpochBytes + remainingStakedEpochBytes6 + bytes(payoutAmountMinusDust);
+        bytes payoutContractState = toPaddedBytes(epochPayout, 4) + totalStakedEpochBytes + remainingStakedEpochBytes6 + bytes(payoutAmountMinusDust);
         require(tx.outputs[5].nftCommitment == payoutContractState);
       } else {
         // Otherwise StabilityPool should be recreated with the new calculated balance

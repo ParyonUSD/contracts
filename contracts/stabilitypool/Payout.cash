@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Contract to payout rewards stability pool to stakers
 // One Payout contract is created per epoch in (every 10th invocation of) the 'NewPeriodPool' function of the StabilityPool
@@ -74,7 +74,7 @@ contract Payout() {
     // This reduces user's stake proportionally to pool's funds spent in liquidations
     int newAmountStaked = amountStakedReceipt * remainingStakedEpoch / totalStakedEpoch;
     int newEpochReceipt = epochPayout + 1;
-    bytes newReceipt = bytes4(newEpochReceipt) + bytes(newAmountStaked);
+    bytes newReceipt = toPaddedBytes(newEpochReceipt, 4) + bytes(newAmountStaked);
 
     // Create new user receipt output at outputIndex 1
     require(tx.outputs[1].tokenCategory == tx.inputs[1].tokenCategory);

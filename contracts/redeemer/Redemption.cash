@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Individual redemption contract, processes an ongoing redemption against a target loan
 // Always tied to a redemptionStateSidecar and a redemptionTokenSidecar

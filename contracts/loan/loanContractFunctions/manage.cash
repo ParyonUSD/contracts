@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Manage loan contract function
 // Is used to repay debt, add collateral, remove collateral, and change the loan's interestManagerConfiguration
@@ -24,7 +24,7 @@ contract manageLoan(
 
     function manage(
       int repayAmount,
-      // Note: the bytes length of function arguments are not automatically enforced
+      // Note: function parameter type enforcement is disabled during compilation for backwards compatibility, so needs to be enforced in contract code
       bytes5 interestManagerConfiguration
     ){
       // Require function to be at inputIndex 3
@@ -106,7 +106,7 @@ contract manageLoan(
 
         // Update BorrowAmount & interestManagerConfiguration
         bytes15 fixedPartLoanState = remainingPartLoanState.split(15)[0];
-        bytes27 newLoanCommitment = 0x01 + bytes6(newBorrowAmount) + fixedPartLoanState + interestManagerConfiguration;
+        bytes27 newLoanCommitment = 0x01 + toPaddedBytes(newBorrowAmount, 6) + fixedPartLoanState + interestManagerConfiguration;
         
         // Recreate loan contract with new state
         require(tx.outputs[1].lockingBytecode == tx.inputs[1].lockingBytecode, "Recreate loan contract - invalid lockingBytecode");

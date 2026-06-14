@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // SwapOutRedemption loan contract function
 // Is used by an existing redemption, to change target of the redemption to be a lower interest loan than the original target loan
@@ -29,11 +29,11 @@ contract swapOutRedemption(
       require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);
 
       // Parse loan state
-      bytes loanState = tx.inputs[0].nftCommitment;
-      bytes7 firstPartLoanState, bytes remainingPartLoanState = loanState.split(7);
+      bytes27 loanState = unsafe_bytes27(tx.inputs[0].nftCommitment);
+      bytes7 firstPartLoanState, bytes20 remainingPartLoanState = loanState.split(7);
       byte identifier, bytes6 borrowedAmountBytes = firstPartLoanState.split(1);
       require(identifier == 0x01);
-      bytes6 amountBeingRedeemedBytes, bytes lastPartLoanState = remainingPartLoanState.split(6);
+      bytes6 amountBeingRedeemedBytes, bytes14 lastPartLoanState = remainingPartLoanState.split(6);
 
       // Loan can only be swapped out if the current loan meets minimum debt threshold
       // Check minimumLoanDebtForSwapOut
@@ -54,7 +54,7 @@ contract swapOutRedemption(
       int newAmountBeingRedeemed = int(amountBeingRedeemedBytes) - int(redemptionAmountBytes);
 
       // Construct new loan state
-      bytes27 newLoanState = firstPartLoanState + bytes6(newAmountBeingRedeemed) + bytes14(lastPartLoanState);
+      bytes27 newLoanState = firstPartLoanState + toPaddedBytes(newAmountBeingRedeemed, 6) + lastPartLoanState;
 
       // Recreate loan contract with new state at outputIndex 0
       require(tx.outputs[0].nftCommitment == newLoanState, "Invalid state loan contract - wrong nftCommitment");

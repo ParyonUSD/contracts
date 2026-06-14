@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // SwapInRedemption loan contract function
 // Is used by an existing redemption, to change target of the redemption to be a lower interest loan than the original target loan
@@ -42,11 +42,11 @@ contract swapInRedemption(
       require(tx.inputs[6].tokenCategory == paryonTokenId + 0x01);
 
       // Parse loan state
-      bytes loanState = tx.inputs[6].nftCommitment;
-      bytes7 firstPartLoanState, bytes remainingPartLoanState = loanState.split(7);
+      bytes27 loanState = unsafe_bytes27(tx.inputs[6].nftCommitment);
+      bytes7 firstPartLoanState, bytes20 remainingPartLoanState = loanState.split(7);
       byte identifier, bytes6 borrowedAmountBytes = firstPartLoanState.split(1);
       require(identifier == 0x01);
-      bytes6 amountBeingRedeemedBytes, bytes lastPartLoanState = remainingPartLoanState.split(6);
+      bytes6 amountBeingRedeemedBytes, bytes14 lastPartLoanState = remainingPartLoanState.split(6);
       byte loanStatus = lastPartLoanState.split(1)[0];
 
       // This prevents new loans from being created just to swap targets of existing redemptions
@@ -75,14 +75,13 @@ contract swapInRedemption(
       // Update mutable redemption state at output index 3
       // Read swappedIn tokenId from loansidecar at inputIndex 7
       bytes swappedInLoanTokenId = tx.inputs[7].tokenCategory;
-      bytes6 newRedemptionAmountBytes = bytes6(newRedemptionAmount);
-      // Semantic typecast of 'swappedInLoanTokenId' so the concatenated result is bytes38
-      bytes38 newRedemptionState = bytes32(swappedInLoanTokenId) + newRedemptionAmountBytes;
+      bytes6 newRedemptionAmountBytes = toPaddedBytes(newRedemptionAmount, 6);
+      bytes38 newRedemptionState = unsafe_bytes32(swappedInLoanTokenId) + newRedemptionAmountBytes;
       require(tx.outputs[3].nftCommitment == newRedemptionState);
       // Logic for recreation of redemption contract is enforced in the redemption contract
 
       // Construct new loan state
-      bytes27 newLoanState = firstPartLoanState + bytes6(newAmountBeingRedeemed) + bytes14(lastPartLoanState);
+      bytes27 newLoanState = firstPartLoanState + toPaddedBytes(newAmountBeingRedeemed, 6) + lastPartLoanState;
 
       // Recreate loan contract with new state at output index 6
       require(tx.outputs[6].nftCommitment == newLoanState, "Invalid state loan contract - wrong nftCommitment");

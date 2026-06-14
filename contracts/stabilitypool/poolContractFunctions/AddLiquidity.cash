@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // AddLiquidity pool contract function
 // Allows user to add ParyonUSD to the stabilityPool and receive a staking receipt NFT
@@ -62,7 +62,7 @@ contract AddLiquidity(
 
       // Create Receipt output at outputIndex 3
       require(tx.outputs[3].tokenCategory == stabilityPoolTokenId, "Invalid receipt, should have correct tokenId");
-      bytes newReceipt = bytes4(nextEpoch) + bytes(addedTokenAmount);
+      bytes newReceipt = toPaddedBytes(nextEpoch, 4) + bytes(addedTokenAmount);
       require(tx.outputs[3].nftCommitment == newReceipt, "Invalid receipt, should have correct nftCommitment");
       require(tx.outputs[3].value == 1000);
 

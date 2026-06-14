@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // Redemption sidecar contract. Used for both RedemptionStateSidecar and redemptionTokenSidecar
 // Tag along input, always tied to the input at activeInputIndex - 1

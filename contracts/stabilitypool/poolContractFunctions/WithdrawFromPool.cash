@@ -1,4 +1,4 @@
-pragma cashscript ^0.12.0;
+pragma cashscript ^0.13.0;
 
 // WithdrawFromPool pool contract function
 // Allows user to withdraw ParyonUSD from the stabilityPool by returning their staking receipt NFT
@@ -84,7 +84,7 @@ contract WithdrawFromPool(
       
       // Change state StabilityPool
       // periodPool remains the same, totalStakedEpoch and remainingStakedEpoch are updated
-      bytes newStateStabilityPool = periodPoolBytes + bytes6(newTotalStakedEpoch) + bytes(newRemainingStakedEpoch);
+      bytes newStateStabilityPool = periodPoolBytes + toPaddedBytes(newTotalStakedEpoch, 6) + bytes(newRemainingStakedEpoch);
       require(tx.outputs[0].nftCommitment == newStateStabilityPool);
 
       // StabilityPool value restricted in calculation of proRataPoolEarnings (see below)
