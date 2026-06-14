@@ -1,110 +1,47 @@
 export default {
   contractName: 'payInterest',
   constructorInputs: [
-    {
-      name: 'stabilityPoolTokenId',
-      type: 'bytes32',
-    },
+    { name: 'stabilityPoolTokenId', type: 'bytes32' },
   ],
   abi: [
-    {
-      name: 'payInterest',
-      inputs: [],
-    },
+    { name: 'payInterest', inputs: [] },
   ],
   bytecode: 'OP_INPUTINDEX OP_3 OP_NUMEQUALVERIFY OP_INPUTINDEX OP_UTXOTOKENCATEGORY OP_0 OP_UTXOTOKENCATEGORY OP_OVER OP_1 OP_CAT OP_EQUALVERIFY OP_0 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_DROP 00 OP_EQUALVERIFY OP_1 OP_UTXOTOKENCATEGORY OP_SWAP OP_1 OP_CAT OP_EQUALVERIFY OP_1 OP_UTXOTOKENCOMMITMENT OP_7 OP_SPLIT OP_SWAP OP_1 OP_SPLIT OP_SWAP OP_1 OP_EQUALVERIFY OP_SWAP OP_6 OP_SPLIT OP_5 OP_SPLIT OP_SWAP OP_1 OP_SPLIT OP_ROT OP_2 OP_SPLIT OP_4 OP_ROLL OP_BIN2NUM OP_0 OP_NUMEQUALVERIFY OP_3 OP_ROLL OP_BIN2NUM OP_DUP OP_2 OP_LESSTHAN OP_IF OP_DUP OP_1ADD OP_NIP OP_ENDIF OP_1 OP_NUM2BIN OP_4 OP_UTXOTOKENCATEGORY OP_6 OP_ROLL OP_1 OP_CAT OP_EQUALVERIFY OP_4 OP_UTXOTOKENCOMMITMENT OP_DUP OP_BIN2NUM OP_5 OP_ROLL OP_BIN2NUM OP_2DUP OP_GREATERTHAN OP_VERIFY OP_0 OP_UTXOTOKENCOMMITMENT OP_9 OP_SPLIT OP_DROP OP_5 OP_SPLIT OP_NIP OP_BIN2NUM OP_7 OP_ROLL OP_BIN2NUM OP_DUP OP_0 OP_GREATERTHAN OP_VERIFY OP_7 OP_ROLL OP_BIN2NUM OP_SWAP 00e1f505 OP_MUL OP_ROT OP_DIV OP_MUL 80969800 OP_DIV OP_1 OP_UTXOVALUE OP_2SWAP OP_SUB OP_SWAP OP_ROT OP_ROT OP_MUL OP_SUB dc05 OP_SUB OP_3 OP_ROLL OP_2 OP_SPLIT OP_1 OP_UTXOTOKENCOMMITMENT OP_13 OP_SPLIT OP_DROP OP_5 OP_ROLL OP_CAT OP_4 OP_ROLL OP_CAT OP_2 OP_PICK OP_CAT OP_ROT OP_CAT OP_SWAP OP_CAT OP_1 OP_OUTPUTTOKENCOMMITMENT OP_EQUALVERIFY OP_1 OP_OUTPUTBYTECODE OP_1 OP_UTXOBYTECODE OP_EQUALVERIFY OP_1 OP_OUTPUTTOKENCATEGORY OP_1 OP_UTXOTOKENCATEGORY OP_EQUALVERIFY OP_1 OP_OUTPUTVALUE OP_NUMEQUALVERIFY OP_1 OP_OUTPUTTOKENAMOUNT OP_0 OP_NUMEQUALVERIFY OP_3 OP_OUTPUTBYTECODE OP_3 OP_UTXOBYTECODE OP_EQUALVERIFY OP_3 OP_OUTPUTTOKENCOMMITMENT OP_3 OP_UTXOTOKENCOMMITMENT OP_EQUALVERIFY OP_3 OP_OUTPUTTOKENCATEGORY OP_3 OP_UTXOTOKENCATEGORY OP_EQUALVERIFY OP_3 OP_OUTPUTVALUE e803 OP_NUMEQUALVERIFY OP_3 OP_OUTPUTTOKENAMOUNT OP_0 OP_NUMEQUAL',
-  source: 'pragma cashscript ^0.12.0;\n\n// PayInterest loan contract function\n// Is used by the Collector contract to trigger interest payments on loans\n// Calculates how much interest (BCH) a loan pays based on the set interest rate (and if needed, the number of elapsed periods)\n\n/*  --- State Immutable NFT ---\n    byte identifier == 0x07\n*/\n\n// Note: This function can only be called if there are no ongoing redemptions against the loan and if the loan debt is non-zero\n\ncontract payInterest(\n  bytes32 stabilityPoolTokenId\n  ) {\n      // function payInterest\n      // Calculates how much interest (BCH) user must pay to Collector based on the number of elapsed loan periods.\n      // Loan collateral pays for the transaction fees (normally no external fee input required).\n      //\n      // Inputs: 00-PriceContract, 01-loan, 02-loanTokenSidecar, 03-payInterest, 04-collector, ?05-feeBch\n      // Outputs: 00-PriceContract, 01-loan, 02-loanTokenSidecar, 03-payInterest, 04-collector, ?05-changeBch\n\n    function payInterest(){\n      // require function to be at inputIndex 3\n      require(this.activeInputIndex == 3);\n\n      // Authenticate PriceContract at inputIndex 0\n      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;\n      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);\n      require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);\n\n      // Authenticate Loan at inputIndex 1, nftCommitment checked below\n      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);\n\n      // Parse loan state\n      // Splitting up state into bytes7, bytes6, bytes5 and bytes9 which totals bytes27\n      bytes loanState = tx.inputs[1].nftCommitment;\n      bytes7 firstPartLoanState, bytes remainingPartLoanState = loanState.split(7);\n      byte identifier, bytes6 borrowedAmountBytes = firstPartLoanState.split(1);\n      require(identifier == 0x01);\n      bytes6 amountBeingRedeemed, bytes remainingPartLoanState2 = remainingPartLoanState.split(6);\n      bytes5 nextFiveBytesLoanState, bytes lastPartLoanState = remainingPartLoanState2.split(5);\n      byte status, bytes4 lastPeriodInterestPaidBytes = nextFiveBytesLoanState.split(1);\n      bytes2 currentInterestRate, bytes lastSevenBytesLoanState = lastPartLoanState.split(2);\n\n      // No ongoing redemptions when paying interest\n      // This also prevents loans from switching to their nextInterestRate while being redeemed against\n      require(int(amountBeingRedeemed) == 0);\n\n      // Update the loan status\n      int statusInt = int(status);\n      if(statusInt < 2) statusInt = statusInt + 1;\n      byte newStatus = byte(statusInt);\n\n      // Authenticate collector\n      require(tx.inputs[4].tokenCategory == stabilityPoolTokenId + 0x01);\n      bytes currentPeriodPoolBytes = tx.inputs[4].nftCommitment;\n      int currentPeriodPool = int(currentPeriodPoolBytes);\n      int lastPeriodInterestPaid = int(lastPeriodInterestPaidBytes);\n      require(currentPeriodPool > lastPeriodInterestPaid);\n\n      // Read latest price from PriceContract contract\n      bytes4 oraclePriceBytes = tx.inputs[0].nftCommitment.slice(5,9);\n      int oraclePrice = int(oraclePriceBytes);\n\n      // Interest only needs to be paid if the loan debt is non-zero\n      int borrowedAmount = int(borrowedAmountBytes);\n      require(borrowedAmount > 0);\n\n      // Calculate newCollateralAmount after interestPayment\n      int interestRateLoan = int(currentInterestRate);\n      int borrowedValueSats = borrowedAmount * 100_000_000 / oraclePrice;\n      // Interest rate is denominated in per 10-million\n      int interestPayment = interestRateLoan * borrowedValueSats / 10_000_000;\n      int collateral = tx.inputs[1].value;\n      // Handle delayed interest payments for previous periods\n      int interestPeriods = currentPeriodPool - lastPeriodInterestPaid;\n      int newCollateralAmount = collateral - (interestPayment * interestPeriods) - 1500;\n\n      bytes2 nextInterestRate, bytes interestManagerConfiguration = lastSevenBytesLoanState.split(2);\n      // Update status, lastPeriodInterestPaid, current and next interest rate state in loan\n      bytes13 fixedPartLoanState = tx.inputs[1].nftCommitment.split(13)[0];\n      // Semantic typecast of \'currentPeriodPoolBytes\' to bytes4 so concatenation is type bytes27\n      bytes27 newLoanCommitment = fixedPartLoanState + newStatus + bytes4(currentPeriodPoolBytes) + nextInterestRate + nextInterestRate + bytes5(interestManagerConfiguration);\n\n      // Recreate loan contract with new state at output index 1\n      require(tx.outputs[1].nftCommitment == newLoanCommitment, "Recreate loan contract - wrong nftCommitment");\n      require(tx.outputs[1].lockingBytecode == tx.inputs[1].lockingBytecode, "Recreate loan contract - invalid lockingBytecode");\n      require(tx.outputs[1].tokenCategory == tx.inputs[1].tokenCategory, "Recreate loan contract - invalid tokenCategory");\n      require(tx.outputs[1].value == newCollateralAmount, "Recreate loan contract - invalid value");\n      require(tx.outputs[1].tokenAmount == 0, "Recreate loan contract - should have zero token amount");\n\n      // Recreate functionContract at outputIndex3\n      require(tx.outputs[3].lockingBytecode == tx.inputs[3].lockingBytecode);\n      require(tx.outputs[3].nftCommitment == tx.inputs[3].nftCommitment);\n      require(tx.outputs[3].tokenCategory == tx.inputs[3].tokenCategory);\n      require(tx.outputs[3].value == 1000);\n      require(tx.outputs[3].tokenAmount == 0);\n    }\n}',
+  source: 'pragma cashscript ^0.13.0;\n\n// PayInterest loan contract function\n// Is used by the Collector contract to trigger interest payments on loans\n// Calculates how much interest (BCH) a loan pays based on the set interest rate (and if needed, the number of elapsed periods)\n\n/*  --- State Immutable NFT ---\n    byte identifier == 0x07\n*/\n\n// Note: This function can only be called if there are no ongoing redemptions against the loan and if the loan debt is non-zero\n\ncontract payInterest(\n  bytes32 stabilityPoolTokenId\n  ) {\n      // function payInterest\n      // Calculates how much interest (BCH) user must pay to Collector based on the number of elapsed loan periods.\n      // Loan collateral pays for the transaction fees (normally no external fee input required).\n      //\n      // Inputs: 00-PriceContract, 01-loan, 02-loanTokenSidecar, 03-payInterest, 04-collector, ?05-feeBch\n      // Outputs: 00-PriceContract, 01-loan, 02-loanTokenSidecar, 03-payInterest, 04-collector, ?05-changeBch\n\n    function payInterest(){\n      // require function to be at inputIndex 3\n      require(this.activeInputIndex == 3);\n\n      // Authenticate PriceContract at inputIndex 0\n      bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory;\n      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);\n      require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);\n\n      // Authenticate Loan at inputIndex 1, nftCommitment checked below\n      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);\n\n      // Parse loan state\n      // Splitting up state into bytes7, bytes6, bytes5 and bytes9 which totals bytes27\n      bytes27 loanState = unsafe_bytes27(tx.inputs[1].nftCommitment);\n      bytes7 firstPartLoanState, bytes20 remainingPartLoanState = loanState.split(7);\n      byte identifier, bytes6 borrowedAmountBytes = firstPartLoanState.split(1);\n      require(identifier == 0x01);\n      bytes6 amountBeingRedeemed, bytes14 remainingPartLoanState2 = remainingPartLoanState.split(6);\n      bytes5 nextFiveBytesLoanState, bytes9 lastPartLoanState = remainingPartLoanState2.split(5);\n      byte status, bytes4 lastPeriodInterestPaidBytes = nextFiveBytesLoanState.split(1);\n      bytes2 currentInterestRate, bytes7 lastSevenBytesLoanState = lastPartLoanState.split(2);\n\n      // No ongoing redemptions when paying interest\n      // This also prevents loans from switching to their nextInterestRate while being redeemed against\n      require(int(amountBeingRedeemed) == 0);\n\n      // Update the loan status\n      int statusInt = int(status);\n      if(statusInt < 2) statusInt = statusInt + 1;\n      byte newStatus = toPaddedBytes(statusInt, 1);\n\n      // Authenticate collector\n      require(tx.inputs[4].tokenCategory == stabilityPoolTokenId + 0x01);\n      bytes4 currentPeriodPoolBytes = unsafe_bytes4(tx.inputs[4].nftCommitment);\n      int currentPeriodPool = int(currentPeriodPoolBytes);\n      int lastPeriodInterestPaid = int(lastPeriodInterestPaidBytes);\n      require(currentPeriodPool > lastPeriodInterestPaid);\n\n      // Read latest price from PriceContract contract\n      bytes4 oraclePriceBytes = tx.inputs[0].nftCommitment.slice(5,9);\n      int oraclePrice = int(oraclePriceBytes);\n\n      // Interest only needs to be paid if the loan debt is non-zero\n      int borrowedAmount = int(borrowedAmountBytes);\n      require(borrowedAmount > 0);\n\n      // Calculate newCollateralAmount after interestPayment\n      int interestRateLoan = int(currentInterestRate);\n      int borrowedValueSats = borrowedAmount * 100_000_000 / oraclePrice;\n      // Interest rate is denominated in per 10-million\n      int interestPayment = interestRateLoan * borrowedValueSats / 10_000_000;\n      int collateral = tx.inputs[1].value;\n      // Handle delayed interest payments for previous periods\n      int interestPeriods = currentPeriodPool - lastPeriodInterestPaid;\n      int newCollateralAmount = collateral - (interestPayment * interestPeriods) - 1500;\n\n      bytes2 nextInterestRate, bytes5 interestManagerConfiguration = lastSevenBytesLoanState.split(2);\n      // Update status, lastPeriodInterestPaid, current and next interest rate state in loan\n      bytes13 fixedPartLoanState = tx.inputs[1].nftCommitment.split(13)[0];\n      bytes27 newLoanCommitment = fixedPartLoanState + newStatus + currentPeriodPoolBytes + nextInterestRate + nextInterestRate + interestManagerConfiguration;\n\n      // Recreate loan contract with new state at output index 1\n      require(tx.outputs[1].nftCommitment == newLoanCommitment, "Recreate loan contract - wrong nftCommitment");\n      require(tx.outputs[1].lockingBytecode == tx.inputs[1].lockingBytecode, "Recreate loan contract - invalid lockingBytecode");\n      require(tx.outputs[1].tokenCategory == tx.inputs[1].tokenCategory, "Recreate loan contract - invalid tokenCategory");\n      require(tx.outputs[1].value == newCollateralAmount, "Recreate loan contract - invalid value");\n      require(tx.outputs[1].tokenAmount == 0, "Recreate loan contract - should have zero token amount");\n\n      // Recreate functionContract at outputIndex3\n      require(tx.outputs[3].lockingBytecode == tx.inputs[3].lockingBytecode);\n      require(tx.outputs[3].nftCommitment == tx.inputs[3].nftCommitment);\n      require(tx.outputs[3].tokenCategory == tx.inputs[3].tokenCategory);\n      require(tx.outputs[3].value == 1000);\n      require(tx.outputs[3].tokenAmount == 0);\n    }\n}',
+  fingerprint: '3941827fafcfd3746da3ce63b37ba61f02c987035332fdbd5829c40f6c58d75f',
   debug: {
     bytecode: 'c0539dc0ce00ce78517e8800cf517f7501008851ce7c517e8851cf577f7c517f7c51887c567f557f7c517f7b527f547a81009d537a8176529f63768b7768518054ce567a517e8854cf7681557a816ea06900cf597f75557f7781577a817600a069577a817c0400e1f505957b969504809698009651c672947c7b7b959402dc0594537a527f51cf5d7f75557a7e547a7e52797e7b7e7c7e51d28851cd51c78851d151ce8851cc9d51d3009d53cd53c78853d253cf8853d153ce8853cc02e8039d53d3009c',
-    sourceMap: '25:14:25:35;:39::40;:6::42:1;28:38:28:59:0;:28::74:1;29:24:29:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;30:24:30:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;33:24:33:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;37:34:37:35:0;:24::50:1;38:80:38:81:0;:64::82:1;39:52:39:70:0;:77::78;:52::79:1;40:14:40:24:0;:28::32;:6::34:1;41:66:41:88:0;:95::96;:66::97:1;42:93:42:94:0;:63::95:1;43:56:43:78:0;:85::86;:56::87:1;44:66:44:83:0;:90::91;:66::92:1;48:18:48:37:0;;:14::38:1;:42::43:0;:6::45:1;51:26:51:32:0;;:22::33:1;52:9:52:18:0;:21::22;:9:::1;:24::50:0;:36::45;:::49:1;:24::50;;53:23:53:38;;56:24:56:25:0;:14::40:1;:44::64:0;;:67::71;:44:::1;:6::73;57:47:57:48:0;:37::63:1;58:34:58:56:0;:30::57:1;59:39:59:66:0;;:35::67:1;60:14:60:56:0;::::1;:6::58;63:42:63:43:0;:32::58:1;:67::68:0;:32::69:1;;:65::66:0;:32::69:1;;64:24:64:45;67:31:67:50:0;;:27::51:1;68:14:68:28:0;:31::32;:14:::1;:6::34;71:33:71:52:0;;:29::53:1;72:30:72:44:0;:47::58;:30:::1;:61::72:0;:30:::1;74:28:74:64;:67::77:0;:28:::1;75:33:75:34:0;:23::41:1;77:28:77:70:0;::::1;78:32:78:42:0;:46::61;:64::79;:46:::1;:32::80;:83::87:0;:32:::1;80:68:80:91:0;;:98::99;:68::100:1;82:45:82:46:0;:35::61:1;:68::70:0;:35::71:1;:::74;84:55:84:64:0;;:34:::1;:74::96:0;;:34::97:1;:100::116:0;;:34:::1;:119::135:0;:34:::1;:145::173:0;:34::174:1;87:25:87:26:0;:14::41:1;:6::112;88:25:88:26:0;:14::43:1;:57::58:0;:47::75:1;:6::129;89:25:89:26:0;:14::41:1;:55::56:0;:45::71:1;:6::123;90:25:90:26:0;:14::33:1;:6::100;91:25:91:26:0;:14::39:1;:43::44:0;:6::104:1;94:25:94:26:0;:14::43:1;:57::58:0;:47::75:1;:6::77;95:25:95:26:0;:14::41:1;:55::56:0;:45::71:1;:6::73;96:25:96:26:0;:14::41:1;:55::56:0;:45::71:1;:6::73;97:25:97:26:0;:14::33:1;:37::41:0;:6::43:1;98:25:98:26:0;:14::39:1;:43::44:0;:6::46:1',
+    sourceMap: '25:14:25:35;:39::40;:6::42:1;28:38:28:59:0;:28::74:1;29:24:29:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;30:24:30:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;33:24:33:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;37:51:37:52:0;:41::67:1;38:82:38:83:0;:66::84:1;39:52:39:70:0;:77::78;:52::79:1;40:14:40:24:0;:28::32;:6::34:1;41:68:41:90:0;:97::98;:68::99:1;42:94:42:95:0;:64::96:1;43:56:43:78:0;:85::86;:56::87:1;44:67:44:84:0;:91::92;:67::93:1;48:18:48:37:0;;:14::38:1;:42::43:0;:6::45:1;51:26:51:32:0;;:22::33:1;52:9:52:18:0;:21::22;:9:::1;:24::50:0;:36::45;:::49:1;:24::50;;53:48:53:49:0;:23::50:1;56:24:56:25:0;:14::40:1;:44::64:0;;:67::71;:44:::1;:6::73;57:62:57:63:0;:52::78:1;58:34:58:56:0;:30::57:1;59:39:59:66:0;;:35::67:1;60:14:60:56:0;::::1;:6::58;63:42:63:43:0;:32::58:1;:67::68:0;:32::69:1;;:65::66:0;:32::69:1;;64:24:64:45;67:31:67:50:0;;:27::51:1;68:14:68:28:0;:31::32;:14:::1;:6::34;71:33:71:52:0;;:29::53:1;72:30:72:44:0;:47::58;:30:::1;:61::72:0;:30:::1;74:28:74:64;:67::77:0;:28:::1;75:33:75:34:0;:23::41:1;77:28:77:70:0;::::1;78:32:78:42:0;:46::61;:64::79;:46:::1;:32::80;:83::87:0;:32:::1;80:69:80:92:0;;:99::100;:69::101:1;82:45:82:46:0;:35::61:1;:68::70:0;:35::71:1;:::74;83:55:83:64:0;;:34:::1;:67::89:0;;:34:::1;:92::108:0;;:34:::1;:111::127:0;:34:::1;:130::158:0;:34:::1;86:25:86:26:0;:14::41:1;:6::112;87:25:87:26:0;:14::43:1;:57::58:0;:47::75:1;:6::129;88:25:88:26:0;:14::41:1;:55::56:0;:45::71:1;:6::123;89:25:89:26:0;:14::33:1;:6::100;90:25:90:26:0;:14::39:1;:43::44:0;:6::104:1;93:25:93:26:0;:14::43:1;:57::58:0;:47::75:1;:6::77;94:25:94:26:0;:14::41:1;:55::56:0;:45::71:1;:6::73;95:25:95:26:0;:14::41:1;:55::56:0;:45::71:1;:6::73;96:25:96:26:0;:14::33:1;:37::41:0;:6::43:1;97:25:97:26:0;:14::39:1;:43::44:0;:6::46:1',
     logs: [],
     requires: [
-      {
-        ip: 3,
-        line: 25,
-      },
-      {
-        ip: 11,
-        line: 29,
-      },
-      {
-        ip: 18,
-        line: 30,
-      },
-      {
-        ip: 24,
-        line: 33,
-      },
-      {
-        ip: 34,
-        line: 40,
-      },
-      {
-        ip: 50,
-        line: 48,
-      },
-      {
-        ip: 70,
-        line: 56,
-      },
-      {
-        ip: 80,
-        line: 60,
-      },
-      {
-        ip: 96,
-        line: 68,
-      },
-      {
-        ip: 143,
-        line: 87,
-        message: 'Recreate loan contract - wrong nftCommitment',
-      },
-      {
-        ip: 148,
-        line: 88,
-        message: 'Recreate loan contract - invalid lockingBytecode',
-      },
-      {
-        ip: 153,
-        line: 89,
-        message: 'Recreate loan contract - invalid tokenCategory',
-      },
-      {
-        ip: 156,
-        line: 90,
-        message: 'Recreate loan contract - invalid value',
-      },
-      {
-        ip: 160,
-        line: 91,
-        message: 'Recreate loan contract - should have zero token amount',
-      },
-      {
-        ip: 165,
-        line: 94,
-      },
-      {
-        ip: 170,
-        line: 95,
-      },
-      {
-        ip: 175,
-        line: 96,
-      },
-      {
-        ip: 179,
-        line: 97,
-      },
-      {
-        ip: 184,
-        line: 98,
-      },
+      { ip: 3, line: 25 },
+      { ip: 11, line: 29 },
+      { ip: 18, line: 30 },
+      { ip: 24, line: 33 },
+      { ip: 34, line: 40 },
+      { ip: 50, line: 48 },
+      { ip: 70, line: 56 },
+      { ip: 80, line: 60 },
+      { ip: 96, line: 68 },
+      { ip: 143, line: 86, message: 'Recreate loan contract - wrong nftCommitment' },
+      { ip: 148, line: 87, message: 'Recreate loan contract - invalid lockingBytecode' },
+      { ip: 153, line: 88, message: 'Recreate loan contract - invalid tokenCategory' },
+      { ip: 156, line: 89, message: 'Recreate loan contract - invalid value' },
+      { ip: 160, line: 90, message: 'Recreate loan contract - should have zero token amount' },
+      { ip: 165, line: 93 },
+      { ip: 170, line: 94 },
+      { ip: 175, line: 95 },
+      { ip: 179, line: 96 },
+      { ip: 184, line: 97 },
     ],
   },
   compiler: {
     name: 'cashc',
-    version: '0.12.0',
+    version: '0.13.0',
+    options: {
+      enforceFunctionParameterTypes: false,
+      enforceLocktimeGuard: false,
+    },
   },
-  updatedAt: '2026-04-24T08:33:25.495Z',
+  updatedAt: '2026-06-12T15:14:13.056Z',
 } as const;

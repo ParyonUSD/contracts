@@ -1,158 +1,64 @@
 export default {
   contractName: 'Redeemer',
   constructorInputs: [
-    {
-      name: 'paryonTokenId',
-      type: 'bytes32',
-    },
-    {
-      name: 'redemptionLockingScript',
-      type: 'bytes',
-    },
-    {
-      name: 'tokenSidecarLockingScript',
-      type: 'bytes',
-    },
+    { name: 'paryonTokenId', type: 'bytes32' },
+    { name: 'redemptionLockingScript', type: 'bytes' },
+    { name: 'tokenSidecarLockingScript', type: 'bytes' },
   ],
   abi: [
     {
       name: 'createRedemption',
       inputs: [
-        {
-          name: 'redeemAmountTokens',
-          type: 'int',
-        },
-        {
-          name: 'redeemerPkh',
-          type: 'bytes20',
-        },
+        { name: 'redeemAmountTokens', type: 'int' },
+        { name: 'redeemerPkh', type: 'bytes20' },
       ],
     },
   ],
   bytecode: 'OP_INPUTINDEX OP_4 OP_NUMEQUALVERIFY OP_0 OP_UTXOTOKENCATEGORY OP_OVER OP_1 OP_CAT OP_EQUALVERIFY OP_0 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_DROP 00 OP_EQUALVERIFY OP_1 OP_UTXOTOKENCATEGORY OP_OVER OP_1 OP_CAT OP_EQUALVERIFY OP_1 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_DROP OP_1 OP_EQUALVERIFY OP_3 OP_UTXOTOKENCATEGORY OP_OVER OP_EQUALVERIFY OP_3 OP_UTXOTOKENCOMMITMENT OP_1 OP_SPLIT OP_DROP OP_4 OP_EQUALVERIFY OP_4 OP_PICK OP_SIZE OP_NIP 14 OP_NUMEQUALVERIFY OP_3 OP_PICK OP_0 OP_GREATERTHAN OP_VERIFY OP_4 OP_OUTPUTVALUE e803 OP_NUMEQUALVERIFY OP_4 OP_OUTPUTBYTECODE OP_4 OP_UTXOBYTECODE OP_EQUALVERIFY OP_4 OP_OUTPUTTOKENCATEGORY OP_4 OP_UTXOTOKENCATEGORY OP_EQUALVERIFY OP_4 OP_OUTPUTTOKENCOMMITMENT OP_0 OP_EQUALVERIFY OP_4 OP_UTXOTOKENCATEGORY 20 OP_SPLIT OP_DROP OP_2 OP_UTXOTOKENCATEGORY OP_5 OP_PICK OP_6 OP_NUM2BIN OP_CAT OP_5 OP_OUTPUTVALUE 8813 OP_NUMEQUALVERIFY OP_5 OP_OUTPUTTOKENCATEGORY OP_2 OP_PICK OP_1 OP_CAT OP_EQUALVERIFY OP_5 OP_OUTPUTBYTECODE OP_4 OP_ROLL OP_EQUALVERIFY OP_5 OP_OUTPUTTOKENCOMMITMENT OP_EQUALVERIFY OP_0 OP_UTXOTOKENCOMMITMENT OP_9 OP_SPLIT OP_DROP OP_5 OP_SPLIT OP_NIP OP_BIN2NUM ed03 OP_MUL e803 OP_DIV OP_5 OP_ROLL OP_SWAP OP_4 OP_NUM2BIN OP_CAT OP_6 OP_OUTPUTVALUE e803 OP_NUMEQUALVERIFY OP_6 OP_OUTPUTTOKENCATEGORY OP_ROT OP_EQUALVERIFY OP_6 OP_OUTPUTBYTECODE OP_3 OP_PICK OP_EQUALVERIFY OP_6 OP_OUTPUTTOKENCOMMITMENT OP_EQUALVERIFY OP_7 OP_OUTPUTVALUE e803 OP_NUMEQUALVERIFY OP_7 OP_OUTPUTBYTECODE OP_ROT OP_EQUALVERIFY OP_7 OP_OUTPUTTOKENCATEGORY OP_OVER OP_EQUALVERIFY OP_7 OP_OUTPUTTOKENAMOUNT OP_ROT OP_NUMEQUALVERIFY OP_TXOUTPUTCOUNT OP_8 OP_GREATERTHAN OP_IF OP_8 OP_OUTPUTTOKENCATEGORY OP_0 OP_EQUAL OP_8 OP_OUTPUTTOKENCATEGORY OP_2 OP_PICK OP_EQUAL OP_BOOLOR OP_DUP OP_VERIFY OP_DROP OP_ENDIF OP_TXOUTPUTCOUNT OP_9 OP_GREATERTHAN OP_IF OP_9 OP_OUTPUTTOKENCATEGORY OP_0 OP_EQUALVERIFY OP_ENDIF OP_TXOUTPUTCOUNT OP_10 OP_LESSTHANOREQUAL OP_NIP',
-  source: 'pragma cashscript ^0.12.0;\n\n// Redeemer contract, creates the individual redemptions for loans.\n\n/*  --- Minting NFT ---\n    no state (0x)\n*/\n\ncontract Redeemer(\n  bytes32 paryonTokenId,\n  bytes redemptionLockingScript,\n  bytes tokenSidecarLockingScript\n  ) {\n      // function createRedemption\n      // Creates a redemption with two tokensidecars to keep state and hold paryon tokens.\n      //\n      // Inputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 0?-Paryon-tokens, 0?-feeBch\n      // Outputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 05-redemption, 06-redemptionStateSidecar, 07-redemptionTokenSidecar, ??-changeBch\n\n    function createRedemption(\n      int redeemAmountTokens,\n      // Note: the bytes length of function arguments are not automatically enforced\n      bytes20 redeemerPkh\n    ){\n      // Require Redeemer to be at inputIndex 4\n      require(this.activeInputIndex == 4);\n\n      // Authenticate PriceContract at inputIndex 0\n      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);\n      require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);\n\n      // Authenticate Loan at inputIndex 1\n      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);\n      require(tx.inputs[1].nftCommitment.split(1)[0] == 0x01);\n\n      // Authenticate Redeem function NFT at inputIndex 3\n      require(tx.inputs[3].tokenCategory == paryonTokenId);\n      require(tx.inputs[3].nftCommitment.split(1)[0] == 0x04);\n\n      // Validate redeemerPkh input\n      require(redeemerPkh.length == 20);\n\n      // Check redeemAmountTokens to be positive\n      // Specific minimumRedeemAmount check is done in startRedemption function\n      require(redeemAmountTokens > 0);\n\n      // Recreate redeemer at output index 4\n      require(tx.outputs[4].value == 1000);\n      require(tx.outputs[4].lockingBytecode == tx.inputs[4].lockingBytecode);\n      require(tx.outputs[4].tokenCategory == tx.inputs[4].tokenCategory);\n      require(tx.outputs[4].nftCommitment == 0x);\n      bytes32 redemptionTokenCategory = tx.inputs[4].tokenCategory.split(32)[0];\n\n      // Construct new mutable state redemption\n      bytes loanTokenId = tx.inputs[2].tokenCategory;\n      bytes6 redeemAmountTokensBytes = bytes6(redeemAmountTokens);\n      // Semantic typecast of \'loanTokenId\' so the concatenated result is bytes38\n      bytes38 mutableRedemptionState = bytes32(loanTokenId) + redeemAmountTokensBytes;\n\n      // Create redemption at output index 5\n      // Redemption has 5000 sats to pay for its own swapRedemption if needed\n      require(tx.outputs[5].value == 5000);\n      require(tx.outputs[5].tokenCategory == redemptionTokenCategory + 0x01);\n      require(tx.outputs[5].lockingBytecode == redemptionLockingScript);\n      require(tx.outputs[5].nftCommitment == mutableRedemptionState);\n\n      // Read latest price from PriceContract contract\n      bytes4 oraclePriceBytes = tx.inputs[0].nftCommitment.slice(5,9);\n      int oraclePrice = int(oraclePriceBytes);\n\n      // Calculate redemptionPrice which is 0.5% above oracle price.\n      // This acts as a redemption fee: the redeemer receives slightly less\n      // BCH per PUSD than the raw oracle rate, protecting loan owners and\n      // discouraging arbitrage against oracle lag.\n      int redemptionPrice = oraclePrice * 1005 / 1000;\n      // Construct immutable state redemptionSidecar\n      bytes24 redemptionSidecarState = redeemerPkh + bytes4(redemptionPrice);\n\n      // Create redemption statesidecar at output index 6\n      require(tx.outputs[6].value == 1000);\n      require(tx.outputs[6].tokenCategory == redemptionTokenCategory);\n      require(tx.outputs[6].lockingBytecode == tokenSidecarLockingScript);\n      require(tx.outputs[6].nftCommitment == redemptionSidecarState);\n\n      // Create redemption tokensidecar at output index 7\n      require(tx.outputs[7].value == 1000);\n      require(tx.outputs[7].lockingBytecode == tokenSidecarLockingScript);\n      require(tx.outputs[7].tokenCategory == paryonTokenId);\n      require(tx.outputs[7].tokenAmount == redeemAmountTokens);\n\n      // Optional ninth output for token change or BCH change\n      if (tx.outputs.length > 8) {\n        // Protect minting capability\n        bool noTokenOrParyonTokens = tx.outputs[8].tokenCategory == 0x || tx.outputs[8].tokenCategory == paryonTokenId;\n        require(noTokenOrParyonTokens);\n      }\n\n      // Optional tenth output for BCH change\n      if (tx.outputs.length > 9) {\n        require(tx.outputs[9].tokenCategory == 0x);\n      }\n\n      // Restrict maximum outputs to 10 total to protect minting capability\n      require(tx.outputs.length <= 10);\n    }\n}',
+  source: 'pragma cashscript ^0.13.0;\n\n// Redeemer contract, creates the individual redemptions for loans.\n\n/*  --- Minting NFT ---\n    no state (0x)\n*/\n\ncontract Redeemer(\n  bytes32 paryonTokenId,\n  bytes redemptionLockingScript,\n  bytes tokenSidecarLockingScript\n  ) {\n      // function createRedemption\n      // Creates a redemption with two tokensidecars to keep state and hold paryon tokens.\n      //\n      // Inputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 0?-Paryon-tokens, 0?-feeBch\n      // Outputs: 00-PriceContract, 01-Loan, 02-loanTokenSidecar, 03-startRedemption, 04-redeemer, 05-redemption, 06-redemptionStateSidecar, 07-redemptionTokenSidecar, ??-changeBch\n\n    function createRedemption(\n      int redeemAmountTokens,\n      // Note: function parameter type enforcement is disabled during compilation for backwards compatibility, so needs to be enforced in contract code\n      bytes20 redeemerPkh\n    ){\n      // Require Redeemer to be at inputIndex 4\n      require(this.activeInputIndex == 4);\n\n      // Authenticate PriceContract at inputIndex 0\n      require(tx.inputs[0].tokenCategory == paryonTokenId + 0x01);\n      require(tx.inputs[0].nftCommitment.split(1)[0] == 0x00);\n\n      // Authenticate Loan at inputIndex 1\n      require(tx.inputs[1].tokenCategory == paryonTokenId + 0x01);\n      require(tx.inputs[1].nftCommitment.split(1)[0] == 0x01);\n\n      // Authenticate Redeem function NFT at inputIndex 3\n      require(tx.inputs[3].tokenCategory == paryonTokenId);\n      require(tx.inputs[3].nftCommitment.split(1)[0] == 0x04);\n\n      // Validate redeemerPkh input\n      require(redeemerPkh.length == 20);\n\n      // Check redeemAmountTokens to be positive\n      // Specific minimumRedeemAmount check is done in startRedemption function\n      require(redeemAmountTokens > 0);\n\n      // Recreate redeemer at output index 4\n      require(tx.outputs[4].value == 1000);\n      require(tx.outputs[4].lockingBytecode == tx.inputs[4].lockingBytecode);\n      require(tx.outputs[4].tokenCategory == tx.inputs[4].tokenCategory);\n      require(tx.outputs[4].nftCommitment == 0x);\n      bytes32 redemptionTokenCategory = tx.inputs[4].tokenCategory.split(32)[0];\n\n      // Construct new mutable state redemption\n      bytes loanTokenId = tx.inputs[2].tokenCategory;\n      bytes6 redeemAmountTokensBytes = toPaddedBytes(redeemAmountTokens, 6);\n      bytes38 mutableRedemptionState = unsafe_bytes32(loanTokenId) + redeemAmountTokensBytes;\n\n      // Create redemption at output index 5\n      // Redemption has 5000 sats to pay for its own swapRedemption if needed\n      require(tx.outputs[5].value == 5000);\n      require(tx.outputs[5].tokenCategory == redemptionTokenCategory + 0x01);\n      require(tx.outputs[5].lockingBytecode == redemptionLockingScript);\n      require(tx.outputs[5].nftCommitment == mutableRedemptionState);\n\n      // Read latest price from PriceContract contract\n      bytes4 oraclePriceBytes = tx.inputs[0].nftCommitment.slice(5,9);\n      int oraclePrice = int(oraclePriceBytes);\n\n      // Calculate redemptionPrice which is 0.5% above oracle price.\n      // This acts as a redemption fee: the redeemer receives slightly less\n      // BCH per PUSD than the raw oracle rate, protecting loan owners and\n      // discouraging arbitrage against oracle lag.\n      int redemptionPrice = oraclePrice * 1005 / 1000;\n      // Construct immutable state redemptionSidecar\n      bytes24 redemptionSidecarState = redeemerPkh + toPaddedBytes(redemptionPrice, 4);\n\n      // Create redemption statesidecar at output index 6\n      require(tx.outputs[6].value == 1000);\n      require(tx.outputs[6].tokenCategory == redemptionTokenCategory);\n      require(tx.outputs[6].lockingBytecode == tokenSidecarLockingScript);\n      require(tx.outputs[6].nftCommitment == redemptionSidecarState);\n\n      // Create redemption tokensidecar at output index 7\n      require(tx.outputs[7].value == 1000);\n      require(tx.outputs[7].lockingBytecode == tokenSidecarLockingScript);\n      require(tx.outputs[7].tokenCategory == paryonTokenId);\n      require(tx.outputs[7].tokenAmount == redeemAmountTokens);\n\n      // Optional ninth output for token change or BCH change\n      if (tx.outputs.length > 8) {\n        // Protect minting capability\n        bool noTokenOrParyonTokens = tx.outputs[8].tokenCategory == 0x || tx.outputs[8].tokenCategory == paryonTokenId;\n        require(noTokenOrParyonTokens);\n      }\n\n      // Optional tenth output for BCH change\n      if (tx.outputs.length > 9) {\n        require(tx.outputs[9].tokenCategory == 0x);\n      }\n\n      // Restrict maximum outputs to 10 total to protect minting capability\n      require(tx.outputs.length <= 10);\n    }\n}',
+  fingerprint: '6478edc26157361165003cc0c9bc1fd07ec02d39876f77bb6c1a8b794a263b2d',
   debug: {
     bytecode: 'c0549d00ce78517e8800cf517f7501008851ce78517e8851cf517f75518853ce788853cf517f7554885479827701149d537900a06954cc02e8039d54cd54c78854d154ce8854d2008854ce01207f7552ce557956807e55cc0288139d55d15279517e8855cd547a8855d28800cf597f75557f778102ed039502e80396557a7c54807e56cc02e8039d56d17b8856cd53798856d28857cc02e8039d57cd7b8857d1788857d37b9dc458a06358d1008758d15279879b76697568c459a06359d1008868c45aa177',
-    sourceMap: '26:14:26:35;:39::40;:6::42:1;29:24:29:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;30:24:30:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;33:24:33:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;34:24:34:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;37:24:37:25:0;:14::40:1;:44::57:0;:6::59:1;38:24:38:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;41:14:41:25:0;;:::32:1;;:36::38:0;:6::40:1;45:14:45:32:0;;:35::36;:14:::1;:6::38;48:25:48:26:0;:14::33:1;:37::41:0;:6::43:1;49:25:49:26:0;:14::43:1;:57::58:0;:47::75:1;:6::77;50:25:50:26:0;:14::41:1;:55::56:0;:45::71:1;:6::73;51:25:51:26:0;:14::41:1;:45::47:0;:6::49:1;52:50:52:51:0;:40::66:1;:73::75:0;:40::76:1;:::79;55:36:55:37:0;:26::52:1;56:46:56:64:0;;:39::65:1;;58::58:85;62:25:62:26:0;:14::33:1;:37::41:0;:6::43:1;63:25:63:26:0;:14::41:1;:45::68:0;;:71::75;:45:::1;:6::77;64:25:64:26:0;:14::43:1;:47::70:0;;:6::72:1;65:25:65:26:0;:14::41:1;:6::69;68:42:68:43:0;:32::58:1;:67::68:0;:32::69:1;;:65::66:0;:32::69:1;;69:24:69:45;75:42:75:46:0;:28:::1;:49::53:0;:28:::1;77:39:77:50:0;;:60::75;:53::76:1;;:39;80:25:80:26:0;:14::33:1;:37::41:0;:6::43:1;81:25:81:26:0;:14::41:1;:45::68:0;:6::70:1;82:25:82:26:0;:14::43:1;:47::72:0;;:6::74:1;83:25:83:26:0;:14::41:1;:6::69;86:25:86:26:0;:14::33:1;:37::41:0;:6::43:1;87:25:87:26:0;:14::43:1;:47::72:0;:6::74:1;88:25:88:26:0;:14::41:1;:45::58:0;:6::60:1;89:25:89:26:0;:14::39:1;:43::61:0;:6::63:1;92:10:92:27:0;:30::31;:10:::1;:33:96:7:0;94:48:94:49;:37::64:1;:68::70:0;:37:::1;:85::86:0;:74::101:1;:105::118:0;;:74:::1;:37;95:16:95:37:0;:8::39:1;92:33:96:7;;99:10:99:27:0;:30::31;:10:::1;:33:101:7:0;100:27:100:28;:16::43:1;:47::49:0;:8::51:1;99:33:101:7;104:14:104:31:0;:35::37;:6::39:1;20:4:105:5',
+    sourceMap: '26:14:26:35;:39::40;:6::42:1;29:24:29:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;30:24:30:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;33:24:33:25:0;:14::40:1;:44::57:0;:60::64;:44:::1;:6::66;34:24:34:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;37:24:37:25:0;:14::40:1;:44::57:0;:6::59:1;38:24:38:25:0;:14::40:1;:47::48:0;:14::49:1;:::52;:56::60:0;:6::62:1;41:14:41:25:0;;:::32:1;;:36::38:0;:6::40:1;45:14:45:32:0;;:35::36;:14:::1;:6::38;48:25:48:26:0;:14::33:1;:37::41:0;:6::43:1;49:25:49:26:0;:14::43:1;:57::58:0;:47::75:1;:6::77;50:25:50:26:0;:14::41:1;:55::56:0;:45::71:1;:6::73;51:25:51:26:0;:14::41:1;:45::47:0;:6::49:1;52:50:52:51:0;:40::66:1;:73::75:0;:40::76:1;:::79;55:36:55:37:0;:26::52:1;56:53:56:71:0;;:73::74;:39::75:1;57::57:92;61:25:61:26:0;:14::33:1;:37::41:0;:6::43:1;62:25:62:26:0;:14::41:1;:45::68:0;;:71::75;:45:::1;:6::77;63:25:63:26:0;:14::43:1;:47::70:0;;:6::72:1;64:25:64:26:0;:14::41:1;:6::69;67:42:67:43:0;:32::58:1;:67::68:0;:32::69:1;;:65::66:0;:32::69:1;;68:24:68:45;74:42:74:46:0;:28:::1;:49::53:0;:28:::1;76:39:76:50:0;;:67::82;:84::85;:53::86:1;:39;79:25:79:26:0;:14::33:1;:37::41:0;:6::43:1;80:25:80:26:0;:14::41:1;:45::68:0;:6::70:1;81:25:81:26:0;:14::43:1;:47::72:0;;:6::74:1;82:25:82:26:0;:14::41:1;:6::69;85:25:85:26:0;:14::33:1;:37::41:0;:6::43:1;86:25:86:26:0;:14::43:1;:47::72:0;:6::74:1;87:25:87:26:0;:14::41:1;:45::58:0;:6::60:1;88:25:88:26:0;:14::39:1;:43::61:0;:6::63:1;91:10:91:27:0;:30::31;:10:::1;:33:95:7:0;93:48:93:49;:37::64:1;:68::70:0;:37:::1;:85::86:0;:74::101:1;:105::118:0;;:74:::1;:37;94:16:94:37:0;:8::39:1;91:33:95:7;;98:10:98:27:0;:30::31;:10:::1;:33:100:7:0;99:27:99:28;:16::43:1;:47::49:0;:8::51:1;98:33:100:7;103:14:103:31:0;:35::37;:6::39:1;24:5:104:5',
     logs: [],
     requires: [
-      {
-        ip: 5,
-        line: 26,
-      },
-      {
-        ip: 11,
-        line: 29,
-      },
-      {
-        ip: 18,
-        line: 30,
-      },
-      {
-        ip: 24,
-        line: 33,
-      },
-      {
-        ip: 31,
-        line: 34,
-      },
-      {
-        ip: 35,
-        line: 37,
-      },
-      {
-        ip: 42,
-        line: 38,
-      },
-      {
-        ip: 48,
-        line: 41,
-      },
-      {
-        ip: 53,
-        line: 45,
-      },
-      {
-        ip: 57,
-        line: 48,
-      },
-      {
-        ip: 62,
-        line: 49,
-      },
-      {
-        ip: 67,
-        line: 50,
-      },
-      {
-        ip: 71,
-        line: 51,
-      },
-      {
-        ip: 87,
-        line: 62,
-      },
-      {
-        ip: 94,
-        line: 63,
-      },
-      {
-        ip: 99,
-        line: 64,
-      },
-      {
-        ip: 102,
-        line: 65,
-      },
-      {
-        ip: 125,
-        line: 80,
-      },
-      {
-        ip: 129,
-        line: 81,
-      },
-      {
-        ip: 134,
-        line: 82,
-      },
-      {
-        ip: 137,
-        line: 83,
-      },
-      {
-        ip: 141,
-        line: 86,
-      },
-      {
-        ip: 145,
-        line: 87,
-      },
-      {
-        ip: 149,
-        line: 88,
-      },
-      {
-        ip: 153,
-        line: 89,
-      },
-      {
-        ip: 169,
-        line: 95,
-      },
-      {
-        ip: 179,
-        line: 100,
-      },
-      {
-        ip: 184,
-        line: 104,
-      },
+      { ip: 5, line: 26 },
+      { ip: 11, line: 29 },
+      { ip: 18, line: 30 },
+      { ip: 24, line: 33 },
+      { ip: 31, line: 34 },
+      { ip: 35, line: 37 },
+      { ip: 42, line: 38 },
+      { ip: 48, line: 41 },
+      { ip: 53, line: 45 },
+      { ip: 57, line: 48 },
+      { ip: 62, line: 49 },
+      { ip: 67, line: 50 },
+      { ip: 71, line: 51 },
+      { ip: 87, line: 61 },
+      { ip: 94, line: 62 },
+      { ip: 99, line: 63 },
+      { ip: 102, line: 64 },
+      { ip: 125, line: 79 },
+      { ip: 129, line: 80 },
+      { ip: 134, line: 81 },
+      { ip: 137, line: 82 },
+      { ip: 141, line: 85 },
+      { ip: 145, line: 86 },
+      { ip: 149, line: 87 },
+      { ip: 153, line: 88 },
+      { ip: 169, line: 94 },
+      { ip: 179, line: 99 },
+      { ip: 184, line: 103 },
     ],
   },
   compiler: {
     name: 'cashc',
-    version: '0.12.0',
+    version: '0.13.0',
+    options: {
+      enforceFunctionParameterTypes: false,
+      enforceLocktimeGuard: false,
+    },
   },
-  updatedAt: '2026-04-24T08:33:31.661Z',
+  updatedAt: '2026-06-12T15:14:19.486Z',
 } as const;
