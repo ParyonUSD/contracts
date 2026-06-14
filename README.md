@@ -11,6 +11,20 @@ It also contains the contract documentation and schematics.
 - `audit` - smart contract audit reports
 - `artifacts` - generated folder with the compiled artifacts output
 
+## Installation
+
+The compiled contract artifacts are published to npm as [`@paryonusd/contracts`](https://www.npmjs.com/package/@paryonusd/contracts):
+
+```bash
+npm install @paryonusd/contracts
+```
+
+The package exports a `paryonArtifacts` object grouping every compiled CashScript artifact, ready to use with the CashScript SDK:
+
+```ts
+import { paryonArtifacts } from '@paryonusd/contracts';
+```
+
 ## Contract Details
 
 The ParyonUSD contract system consists of a total of 26 contracts:

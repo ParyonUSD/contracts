@@ -1,17 +1,22 @@
 {
-  "name": "paryon_contracts",
+  "name": "@paryonusd/contracts",
   "version": "1.0.0",
-  "description": "Paryon Smart Contracts",
-  "main": "index.js",
+  "description": "ParyonUSD Smart Contracts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "compile": "tsx compile.ts"
+    "compile": "tsx compile.ts",
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
-  "dependencies": {
-    "cashc": "^0.12.0"
-  },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/node": "^24.6.2",
-    "tsx": "^4.20.6"
+    "cashc": "0.13.0",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.2"
   }
 }
