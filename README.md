@@ -79,16 +79,6 @@ The artifacts are generated as TS files to the `artifacts` folder.
 Re-compiling artifacts from the same contracts source code will result in identical artifacts except for the `updatedAt` timestamp.
 Changing comments in the contract source code changes the `source`, `sourceMap` and `requires` in the compiled output.
 
-### Compiled Contract sizes
-
-To see the compiled output sizes for the different contracts you can modify the compilation command like the following:
-
-```ts
-    const command = `cashc "${contractFile}" --size --opcount --output "${outputPath}" --format ts`;
-```
-
-Similarly, you could change the artifact output file format to `json`.
-
 ## Audit Snapshots
 
 The contract source has been through two external audits. The first was delivered across three passes and its report is published in this repo; a second is still in progress. The table below lists the tree hashes identifying each snapshot of the finalised audit. Tree hashes are derived from repo content and are stable across history rewrites.
