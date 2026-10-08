@@ -1,6 +1,6 @@
 {
   "name": "@paryonusd/contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ParyonUSD Smart Contracts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

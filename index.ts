@@ -1,5 +1,6 @@
 import artifactBorrowing from './artifacts/Borrowing.js';
 import artifactPriceContract from './artifacts/PriceContract.js';
+import artifactPriceContractGuarded from './artifacts/PriceContractGuarded.js';
 import artifactLoan from './artifacts/Loan.js';
 import artifactLoanSidecar from './artifacts/LoanSidecar.js';
 import artifactFunctionLiquidate from './artifacts/liquidate.js';
@@ -28,6 +29,7 @@ import artifactLoanKeyOriginProof from './artifacts/LoanKeyOriginProof.js';
 export const paryonArtifacts = {
   artifactBorrowing,
   artifactPriceContract,
+  artifactPriceContractGuarded,
   artifactLoan,
   artifactLoanSidecar,
   loanKey:{
