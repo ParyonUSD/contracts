@@ -41,6 +41,7 @@
 + [Contract Concurrency](#contract-concurrency)
 + [Transaction Fees](#transaction-fees)
 + [Trust In Transaction Building](#trust-in-transaction-building)
++ [Shared Token Categories and Migration](#shared-token-categories-and-migration)
 
 ## High Level Design
 
@@ -358,7 +359,7 @@ The PriceContract is coded to validate BCH/USD oracle priceMessages from the ora
 
 The PriceContract has a function `migrateContract` which enables a migration key to change the contract bytecode of the PriceContract. This means that whereas the other contracts are immutable, the PriceContract can be upgraded or changed over time.
 
-The PriceContract is the only upgradable contract in the system, and it is also the only contract that already carries a trust assumption because it depends on an external oracle. Making it upgradable allows the system to migrate to a more advanced oracle in the future, such as a decentralized oracle, or to adjust the update frequency if needed. The migration key introduces an additional trust assumption, but it is scoped to a contract that inherently requires trust in external price data.
+The PriceContract is the only upgradable contract in the system, and it is also the only contract that already carries a trust assumption because it depends on an external oracle. Making it upgradable allows the system to migrate to a more advanced oracle in the future, such as a decentralized oracle, or to adjust the update frequency if needed. The migration key introduces an additional trust assumption, attached to a contract that inherently requires trust in external price data. Because the price contracts share their token category with the loans and ParyonUSD itself, a migration can reach further than the price; see [Shared Token Categories and Migration](#shared-token-categories-and-migration).
 
 Note that the `oracleMigrationKey` can also change the layout of the nftCommitment upon migration, specifically the price contract state can be extended:
 
@@ -532,3 +533,14 @@ The Paryon contracts do not lock down the users inputs and outputs, this is to a
 However currently using BCH WalletConnect the transaction building is happening on the Dapp-side, meaning that the dapp is responsible/trusted for filling in the correct user-address for flexible destinations. A malicious dapp could misdirect the users PUSD, loankey or BCH outputs to an address different from the user address.
 
 However, with advances in transaction building technology like Libauth Templates, CashConnect and XO Contract contract templates, this trusted element will be able to be resolved in the future by relying on a list of templates so the wallet can perform the transaction building, instead of relying on the Dapp for this.
+
+## Shared Token Categories and Migration
+
+The `oracleMigrationKey` is held by the team stewarding the protocol, so the price contracts can move to new oracle code. Together with the oracle, it has always been a point of trust: migrated code decides which prices it accepts, and a wrong price alone is enough to wrongly liquidate loans, open undercollateralized ones or redeem collateral at the wrong rate. The key holds no funds, and no loan, stake or redemption contract accepts it as authorization; every other contract's code stays immutable. What the key can reach, it reaches through the price contracts' token, as described below. A migration takes effect immediately, with no notice period.
+
+What the original design did not account for is how far a migration reaches. The price contracts hold a mutable NFT of `paryonTokenId`, the same category as the loans, the loan functions and ParyonUSD itself, and the other contracts trust that category:
+
+- **The token itself.** `migrateContract` only requires output 0 to keep the category and capability, so it can go to any locking script, including a plain key. A mutable NFT can be recreated with any commitment, or give up its capability to become immutable. A migrated price token can therefore become an immutable `paryonTokenId` NFT with a single-byte commitment, which `Loan.cash` accepts as a loan function: it authenticates functions by category and commitment length only, not by locking script. A loan function decides where a loan's collateral goes, so such an NFT could release the collateral of any loan.
+- **The price contract's output.** A price contract takes part in every transaction that reads the price: borrowing, managing a loan, paying interest, liquidating and starting a redemption. The other contracts leave the checks on its output to the price contract. New code can add rules to these transactions, which is how the [origin-proof NFT fix](../post-audit-changes.md#pricecontractguarded-origin-proof-nft-burn) works, but it can also drop the checks that keep other tokens out of its output. A copy of the Borrowing contract's minting NFT could then leave through it, and mint ParyonUSD without collateral.
+
+So a migration is not limited to the price: it can change rules elsewhere in the system. The lesson is that an upgradable part should have a token category of its own, which only the contracts that read its data accept, and that every contract that includes it should check its output rather than leave that to the upgradable code. ParyonUSD V2 does both, and also requires a price contract migration to be announced on-chain about two days before it can take effect.

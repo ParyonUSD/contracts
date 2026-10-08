@@ -63,6 +63,7 @@ contracts/
 │   └── StabilityPoolSidecar.cash
 ├──  Borrowing.cash
 ├──  PriceContract.cash
+├──  PriceContractGuarded.cash  (migration target for PriceContract)
 </pre>
 
 ## Re-compiling Artifacts
@@ -95,7 +96,7 @@ You can list tree hashes for all commits in the repo with:
 git log --format="%T %s"
 ```
 
-The current repo state includes additional hardening identified by a follow-up AI-assisted review beyond the third-pass snapshot. Six contracts' compiled bytecode has changed; the remaining 20 are bytecode-identical. See [post-audit-changes.md](post-audit-changes.md) for what changed and why, and [bytecode-verification.md](bytecode-verification.md) for how to verify the unchanged 20 against the snapshot.
+The current repo state includes additional hardening identified by a follow-up AI-assisted review beyond the third-pass snapshot. Six contracts' compiled bytecode has changed; the remaining 20 are bytecode-identical. `PriceContractGuarded`, the migration target for `PriceContract`, is new and has no audit counterpart. See [post-audit-changes.md](post-audit-changes.md) for what changed and why, and [bytecode-verification.md](bytecode-verification.md) for how to verify the unchanged 20 against the snapshot.
 
 The contracts have since been updated to the CashScript v0.13.0 language version. To keep the compiled bytecode identical to before, its two new default-on compiler options are explicitly opted out of via the `-S` and `-L` flags in `compile.ts`.
 

@@ -24,7 +24,7 @@ diff <(git ls-tree --name-only <commit>:artifacts/ | xargs -I{} git show <commit
 
 > **Note:** To verify using `debug.bytecode` (hex) instead, replace `"^  bytecode:"` with `"^    bytecode:"` in the command above (4 spaces instead of 2).
 
-> **Expected post-audit mismatches:** this diff is expected to report exactly six mismatches, on `Redeemer`, `PriceContract`, `Borrowing`, `NewPeriodPool`, `redeem` and `manage`. Each corresponds to an intentional post-audit source change described in [post-audit-changes.md](post-audit-changes.md). Any additional bytecode differences indicate unexpected drift and must be investigated.
+> **Expected post-audit mismatches:** this diff is expected to report exactly seven differing bytecodes. Six are the changed `Redeemer`, `PriceContract`, `Borrowing`, `NewPeriodPool`, `redeem` and `manage`, each an intentional post-audit source change described in [post-audit-changes.md](post-audit-changes.md). The seventh is `PriceContractGuarded`, a new contract with no audit-commit counterpart. Any additional bytecode differences indicate unexpected drift and must be investigated.
 
 Note that `artifacts/Parity.ts` was renamed to `artifacts/Borrowing.ts` post-audit. The sorted diff above compares bytecode lines independent of filenames, so the rename itself does not produce a spurious mismatch; however Borrowing's bytecode has also changed beyond the rename.
 
@@ -36,12 +36,12 @@ v0.13 also turns on two compiler enforcement features by default: function-param
 
 ## Green-light verification (post-change)
 
-Because the audit diff above is expected to fail on the six contracts listed, use this variant which excludes them and should exit 0, confirming the remaining 20 contracts still match their audited bytecode:
+Because the audit diff above is expected to fail on the six contracts listed and the new `PriceContractGuarded`, use this variant which excludes them and should exit 0, confirming the remaining 20 contracts still match their audited bytecode:
 
 ```bash
 # Resolve the audit commit from its tree hash (see "Finding the audit commit" above)
 COMMIT=$(git log --format='%H %T' | awk '$2=="e8b122a7faa14b8beda61563a2d17cf9073dc42f" {print $1; exit}')
-EXCLUDE='(^|/)(Redeemer|PriceContract|Borrowing|Parity|NewPeriodPool|redeem|manage)\.ts$'
+EXCLUDE='(^|/)(Redeemer|PriceContract|PriceContractGuarded|Borrowing|Parity|NewPeriodPool|redeem|manage)\.ts$'
 diff \
   <(git ls-tree --name-only $COMMIT:artifacts/ | grep -Ev "$EXCLUDE" | xargs -I{} git show $COMMIT:artifacts/{} | grep "^  bytecode:" | sort) \
   <(ls artifacts/*.ts | grep -Ev "$EXCLUDE" | xargs grep -h "^  bytecode:" | sort) \

@@ -11,6 +11,10 @@ Six compiled artifacts differ from their audit-commit bytecode:
 - `Borrowing`, `redeem`, `NewPeriodPool`: [tx.time locktime guard](#borrowing-redeem-newperiodpool-txtime-locktime-guard)
 - `manage`: [explicit mutable-NFT burn on loan close](#manage-explicit-mutable-nft-burn-on-loan-close)
 
+One compiled artifact is new, and has no audit-commit bytecode to differ from:
+
+- `PriceContractGuarded`: [origin-proof NFT burn](#pricecontractguarded-origin-proof-nft-burn)
+
 ## Inspecting the opcode delta
 
 Each artifact's `bytecode` field is a single long line, so line-based `diff` is unhelpful. To see the exact opcode(s) that changed, use `git diff --no-index --word-diff` with the space-separated opcodes as tokens:
@@ -72,3 +76,17 @@ In bytecode terms, the delta is an `OP_IF`-guarded block inserted at the end of 
 ```
 
 The inserted block enforces `tx.outputs[3].tokenCategory == paryonTokenId + 0x01` (category with the mutable capability byte appended) and `tx.outputs[3].lockingBytecode == <OP_RETURN, empty-data>`. See `contract_docs/contract_safety.md` "Protecting Delegated Authority on Dumb Top-Level Contracts" for the full reasoning.
+
+## PriceContractGuarded: origin-proof NFT burn
+
+`PriceContractGuarded.cash` is `PriceContract` with one extra check in `sharePrice`, and the same constructor parameters. It is added as an unchanged copy of `PriceContract` in one commit and changed in the next, so that second commit's diff is the whole change.
+
+**What it enforces.** `LoanKeyFactory.create` mints an immutable loanKeyFactory NFT onto `LoanKeyOriginProof`, the origin-proof NFT. `LoanKeyOriginEnforcer` accepts the origin-proof NFT one outpoint after it as evidence that the factory created its loanKey category, by category and position only, and `LoanKeyOriginProof.attach` pins no output. `borrow` leaves its outputs 7 to 9 free for any non-paryon token, so with `PriceContract` an origin-proof NFT can survive its borrow and back a second loan with an existing loan's id. Redemptions find their loan by that id. When a borrow spends the guarded price contract, outputs 7 to 9 may hold no token, or only a token of the new loan's loanKey category without capability, read from the loan sidecar `borrow` pins at output 3. The origin-proof NFT has nowhere to go, so it is burned and each one backs exactly one loan. That covers the library's outputs there, a frontend fee, BCH change and the interest manager's immutable loanKey NFT, while minting or mutable loanKey copies and tokens of any other category are refused.
+
+**Why in the price contract.** `Borrowing` and the loanKey contracts are fixed at genesis. The price contract can move to new code through `migrateContract`, and every spend of an origin-proof NFT includes it: the enforcer requires the Borrowing contract at input 0 and the price contract at input 1. No contract authenticates the price contract by its locking bytecode, only by its category and the `0x00` state prefix, so price threads moved to the guarded code keep working with every other contract unchanged. Every price thread has to move: a borrow can share the price from any of them, so one thread left on `PriceContract` still lets a borrow keep its origin-proof NFT.
+
+**Why outputs 7 to 9 are enough.** `borrow` pins outputs 0 and 2 to 6 and caps the transaction at 10 outputs, and `sharePrice` recreates the price contract at its own index, output 1. The check only runs with the Borrowing contract at input 0, so every other transaction that reads the price skips it. The burn is implicit, by leaving the origin-proof NFT out of the outputs, rather than an explicit OP_RETURN burn as in `manage`: an explicit burn would take one of the three free outputs under `borrow`'s 10-output cap, which a borrow with a frontend fee, a delegated interest manager and BCH change already fills.
+
+**No origin-proof NFT was kept before.** On mainnet no borrow has kept its origin-proof NFT, and this can be checked on-chain: every immutable loanKeyFactory NFT is either still unspent on `LoanKeyOriginProof`, or was burned by the borrow that spent it. The allow-list also relies on every loanKeyFactory minting NFT staying on `LoanKeyFactory`, so that no loan's loanKey category can be the loanKeyFactory category; on mainnet each one has only ever been on that contract. Both held at block 971,835, and still held at block 972,004, right after the migration.
+
+**Migrated on mainnet.** All five mainnet price threads moved to `PriceContractGuarded` through `migrateContract` on 2026-10-08, in block 972,003.
