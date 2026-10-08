@@ -5,6 +5,9 @@ pragma cashscript ^0.13.0;
 // Additionally the pricecontract shares its state with other contracts
 // The Pricecontract can be migrated to updated contract code by a MigrationKey
 
+// When sharing its price with a borrow, the guarded Pricecontract requires the borrow to burn its origin-proof NFT
+// (the immutable loanKeyFactory NFT on LoanKeyOriginProof), so each one backs exactly one loan (see post-audit-changes.md)
+
 /*  --- State Mutable NFT ---
     byte identifier == 0x00
     bytes4 sequence,
@@ -96,6 +99,25 @@ contract PriceContractGuarded(
     
     // Verify price contracts keep same contract state
     require(tx.outputs[this.activeInputIndex].nftCommitment == tx.inputs[this.activeInputIndex].nftCommitment, "Invalid nftCommitment, commitment should be replicated");
+
+    // In a borrow (Borrowing contract at inputIndex 0), the free outputs 7 to 9 may only hold tokens of the new loan's
+    // loanKey category without capability (the category of the loan sidecar at outputIndex 3), so the origin-proof NFT is burned
+    bytes paryonTokenId = tx.inputs[this.activeInputIndex].tokenCategory.split(32)[0];
+    if (tx.inputs[0].tokenCategory == paryonTokenId + 0x02) {
+      bytes loanKeyTokenId = tx.outputs[3].tokenCategory;
+      if (tx.outputs.length > 7) {
+        bytes tokenCategoryOutput7 = tx.outputs[7].tokenCategory;
+        if(tokenCategoryOutput7 != 0x) require(tokenCategoryOutput7 == loanKeyTokenId, "Invalid output - may only hold loanKey tokens");
+      }
+      if (tx.outputs.length > 8) {
+        bytes tokenCategoryOutput8 = tx.outputs[8].tokenCategory;
+        if(tokenCategoryOutput8 != 0x) require(tokenCategoryOutput8 == loanKeyTokenId, "Invalid output - may only hold loanKey tokens");
+      }
+      if (tx.outputs.length > 9) {
+        bytes tokenCategoryOutput9 = tx.outputs[9].tokenCategory;
+        if(tokenCategoryOutput9 != 0x) require(tokenCategoryOutput9 == loanKeyTokenId, "Invalid output - may only hold loanKey tokens");
+      }
+    }
   }
 
     // function migrateContract
